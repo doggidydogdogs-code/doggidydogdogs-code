@@ -3,132 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>✧･ﾟ Storm Tracker Tools ﾟ･✧</title>
+    <title>TYPHOON TRACKER · OPERATIONAL SUITE</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(135deg, #ffe0f0, #e0d4ff, #ffe0ec);
-            font-family: 'Segoe UI', 'Georgia', cursive, sans-serif;
+            background: #0b121c;
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            margin: 0;
+            color: #e0e7f0;
         }
-        .card {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(15px);
-            border-radius: 28px;
-            padding: 35px 30px;
-            box-shadow: 0 8px 40px rgba(255, 140, 200, 0.25), 0 2px 10px rgba(0,0,0,0.06);
-            border: 2px solid rgba(255, 160, 200, 0.4);
-            max-width: 600px;
+
+        /* Subtle storm grid background */
+        .background-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(18, 34, 58, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(18, 34, 58, 0.15) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: 0;
         }
+
+        .card {
+            background: rgba(12, 20, 32, 0.9);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 22px;
+            padding: 32px 30px 28px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(66, 153, 225, 0.25);
+            border: 1px solid rgba(71, 145, 210, 0.25);
+            max-width: 650px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(66, 153, 225, 0.45);
+        }
+
+        /* Top right corner UTC display */
+        .utc-corner {
+            position: absolute;
+            top: 18px;
+            right: 28px;
+            text-align: right;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            background: rgba(8, 18, 30, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(66, 153, 225, 0.4);
+            line-height: 1.3;
+            letter-spacing: 0.5px;
+            z-index: 5;
+        }
+
+        .utc-time {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #9fcfff;
+            text-shadow: 0 0 6px rgba(0, 160, 255, 0.5);
+        }
+
+        .utc-date {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #8aa0b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         .header {
-            text-align: center;
+            text-align: left;
             margin-bottom: 28px;
+            padding-right: 130px; /* avoid overlap with UTC box */
         }
+
         .header h1 {
-            font-size: 1.7em;
-            background: linear-gradient(90deg, #e878a0, #c084e8, #e878a0);
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #d4e6ff;
+            letter-spacing: -0.3px;
+            text-transform: uppercase;
+            border-left: 5px solid #2b7cb0;
+            padding-left: 18px;
+            background: linear-gradient(180deg, #e2edff 0%, #a3c6f0 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .sparkles {
-            text-align: center;
-            color: #d89cc8;
-            font-size: 1em;
-            margin-bottom: 22px;
-            letter-spacing: 2px;
-        }
-        .tool-list { display: flex; flex-direction: column; gap: 16px; }
-        .tool-item {
-            background: rgba(255, 235, 248, 0.7);
-            border-radius: 18px;
-            padding: 16px 20px;
-            border: 1.5px solid rgba(255, 175, 210, 0.5);
-            transition: all 0.25s ease;
-            word-break: break-all;
-        }
-        .tool-item:hover {
-            background: rgba(255, 220, 240, 0.85);
-            border-color: #f0a0c8;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(220, 130, 170, 0.22);
-        }
-        .tool-label {
-            font-size: 0.8em;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #c06090;
             margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #7f95b5;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 2px;
+            padding-left: 23px;
+        }
+
+        .tool-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 8px;
+        }
+
+        .tool-item {
+            background: rgba(18, 28, 44, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border-radius: 14px;
+            padding: 14px 18px;
+            border: 1px solid rgba(55, 110, 160, 0.4);
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-item:hover {
+            background: rgba(22, 40, 62, 0.8);
+            border-color: #3a7bbf;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 120, 210, 0.2);
+        }
+
+        .tool-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2.2px;
+            color: #8bb3da;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 8px;
         }
+
+        .tool-label i {
+            font-style: normal;
+            font-size: 0.9rem;
+            filter: drop-shadow(0 0 4px #2f6b9c);
+        }
+
         .tool-link {
-            font-size: 0.82em;
-            color: #b04878;
+            font-size: 0.8rem;
+            color: #b6d2f0;
             text-decoration: none;
-            opacity: 0.85;
-            transition: opacity 0.2s;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            background: rgba(0, 20, 40, 0.5);
+            padding: 6px 10px;
+            border-radius: 6px;
             word-break: break-all;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+            display: block;
         }
+
         .tool-link:hover {
-            opacity: 1;
-            text-decoration: underline;
-            text-decoration-color: #e8a0c0;
-            text-underline-offset: 3px;
+            background: rgba(10, 40, 70, 0.8);
+            border-color: #3f7fbf;
+            color: #e0f0ff;
+            text-decoration: none;
+            box-shadow: 0 0 8px rgba(0, 160, 255, 0.4);
         }
+
+        .extra-badge {
+            font-size: 0.65rem;
+            background: #1e3855;
+            color: #c4d9ff;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-left: 8px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            white-space: nowrap;
+        }
+
         .footer {
-            text-align: center;
-            margin-top: 26px;
-            color: #c8709a;
-            font-style: italic;
-            font-size: 0.9em;
-            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 24px;
+            color: #809bb5;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(74, 120, 170, 0.3);
+            padding-top: 18px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .local-time-box {
+            background: rgba(8, 22, 40, 0.7);
+            padding: 5px 14px;
+            border-radius: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            border: 1px solid #2e5170;
+            color: #bed9f5;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .local-time-box span {
+            color: #9fc6ff;
+            font-weight: 600;
+        }
+
+        .tagline {
+            font-style: normal;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.75;
+        }
+
+        @media (max-width: 500px) {
+            .card {
+                padding: 22px 18px;
+            }
+            .utc-corner {
+                top: 12px;
+                right: 14px;
+                padding: 6px 10px;
+            }
+            .header h1 {
+                font-size: 1.4rem;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="background-overlay"></div>
+
     <div class="card">
-        <div class="header">
-            <h1>✧ ˚₊· ͟͟͞͞➳❥ STORM TRACKER TOOLS ❥➳͟͟͞͞ ˚₊· ✧</h1>
+        <!-- UTC time and date top right corner -->
+        <div class="utc-corner" id="utcDisplay">
+            <div class="utc-time" id="utcTime">--:--:--</div>
+            <div class="utc-date" id="utcDate">---</div>
         </div>
-        <div class="sparkles">♡ ✧ ˚  ༘  ⋆｡♡˚ ✧ ˚ ♡</div>
+
+        <div class="header">
+            <h1>TYPHOON TRACKER</h1>
+            <div class="subtitle">OPERATIONAL ANALYSIS SUITE</div>
+        </div>
 
         <div class="tool-list">
             <div class="tool-item">
-                <div class="tool-label">🌸 Best Track</div>
-                <a class="tool-link" href="https://colab.research.google.com/drive/19S8G2sFcGynwRksDYlOkk46l9OZua7CS?authuser=4" target="_blank">https://colab.research.google.com/drive/19S8G2sFcGynwRksDYlOkk46l9OZua7CS?authuser=4</a>
+                <div class="tool-label">
+                    <span>🔹 BEST TRACK</span>
+                </div>
+                <a class="tool-link" href="https://colab.research.google.com/drive/19S8G2sFcGynwRksDYlOkk46l9OZua7CS?authuser=4" target="_blank" rel="noopener noreferrer">https://colab.research.google.com/drive/19S8G2sFcGynwRksDYlOkk46l9OZua7CS?authuser=4</a>
             </div>
+
             <div class="tool-item">
-                <div class="tool-label">🌺 Satellite Imagery</div>
-                <a class="tool-link" href="https://colab.research.google.com/drive/1o5zB9aiv-JJVW1R_eOMl-kiqefkRumGO?authuser=4" target="_blank">https://colab.research.google.com/drive/1o5zB9aiv-JJVW1R_eOMl-kiqefkRumGO?authuser=4</a>
+                <div class="tool-label">
+                    <span>🛰️ SATELLITE IMAGERY</span>
+                    <span class="extra-badge">& FNV3 ENSEMBLE</span>
+                </div>
+                <a class="tool-link" href="https://colab.research.google.com/drive/1o5zB9aiv-JJVW1R_eOMl-kiqefkRumGO?authuser=4" target="_blank" rel="noopener noreferrer">https://colab.research.google.com/drive/1o5zB9aiv-JJVW1R_eOMl-kiqefkRumGO?authuser=4</a>
             </div>
+
             <div class="tool-item">
-                <div class="tool-label">🌷 Cone & Radar</div>
-                <a class="tool-link" href="https://colab.research.google.com/drive/1iTSQofINW3tf1bre47XTiCC-cqtxfvoo?authuser=4" target="_blank">https://colab.research.google.com/drive/1iTSQofINW3tf1bre47XTiCC-cqtxfvoo?authuser=4</a>
+                <div class="tool-label">
+                    <span>📡 CONE & RADAR</span>
+                </div>
+                <a class="tool-link" href="https://colab.research.google.com/drive/1iTSQofINW3tf1bre47XTiCC-cqtxfvoo?authuser=4" target="_blank" rel="noopener noreferrer">https://colab.research.google.com/drive/1iTSQofINW3tf1bre47XTiCC-cqtxfvoo?authuser=4</a>
             </div>
+
             <div class="tool-item">
-                <div class="tool-label">🪷 GFS & Microwave</div>
-                <a class="tool-link" href="https://colab.research.google.com/drive/1uQnPY5SrR3G6ARhlNvnxs_xVBp8supLo?authuser=4" target="_blank">https://colab.research.google.com/drive/1uQnPY5SrR3G6ARhlNvnxs_xVBp8supLo?authuser=4</a>
+                <div class="tool-label">
+                    <span>🌊 GFS & MICROWAVE</span>
+                </div>
+                <a class="tool-link" href="https://colab.research.google.com/drive/1uQnPY5SrR3G6ARhlNvnxs_xVBp8supLo?authuser=4" target="_blank" rel="noopener noreferrer">https://colab.research.google.com/drive/1uQnPY5SrR3G6ARhlNvnxs_xVBp8supLo?authuser=4</a>
             </div>
+
             <div class="tool-item">
-                <div class="tool-label">🌼 Outlook Plotter</div>
-                <a class="tool-link" href="https://colab.research.google.com/drive/1PYFcd4xAc-Oean0X5GTYGRc3Ls6BcGUd?authuser=4" target="_blank">https://colab.research.google.com/drive/1PYFcd4xAc-Oean0X5GTYGRc3Ls6BcGUd?authuser=4</a>
+                <div class="tool-label">
+                    <span>📊 OUTLOOK PLOTTER</span>
+                </div>
+                <a class="tool-link" href="https://colab.research.google.com/drive/1PYFcd4xAc-Oean0X5GTYGRc3Ls6BcGUd?authuser=4" target="_blank" rel="noopener noreferrer">https://colab.research.google.com/drive/1PYFcd4xAc-Oean0X5GTYGRc3Ls6BcGUd?authuser=4</a>
             </div>
+
             <div class="tool-item">
-                <div class="tool-label">🌻 Chase Plotter</div>
-                <a class="tool-link" href="https://colab.research.google.com/drive/1Aosbaz5SJoIZ3V_tk6O7Ib3JetruqNju?authuser=4" target="_blank">https://colab.research.google.com/drive/1Aosbaz5SJoIZ3V_tk6O7Ib3JetruqNju?authuser=4</a>
+                <div class="tool-label">
+                    <span>🌍 CHASE PLOTTER</span>
+                </div>
+                <a class="tool-link" href="https://colab.research.google.com/drive/1Aosbaz5SJoIZ3V_tk6O7Ib3JetruqNju?authuser=4" target="_blank" rel="noopener noreferrer">https://colab.research.google.com/drive/1Aosbaz5SJoIZ3V_tk6O7Ib3JetruqNju?authuser=4</a>
             </div>
         </div>
 
-        <div class="footer">♡ ˚₊· ͟͟͞͞➳❥ happy tracking, angel! ❥➳͟͟͞͞ ˚₊· ♡</div>
+        <div class="footer">
+            <div class="tagline">◈ REAL-TIME MONITORING ◈</div>
+            <div class="local-time-box" id="localTimeDisplay">
+                <span>LOCAL</span> <span id="localTimeValue">--:--:--</span>
+            </div>
+        </div>
     </div>
+
+    <script>
+        (function() {
+            // Update UTC time and date continuously
+            function updateUTCDisplay() {
+                const now = new Date();
+                
+                // UTC time string (HH:MM:SS)
+                const utcHours = String(now.getUTCHours()).padStart(2, '0');
+                const utcMinutes = String(now.getUTCMinutes()).padStart(2, '0');
+                const utcSeconds = String(now.getUTCSeconds()).padStart(2, '0');
+                const utcTimeString = `${utcHours}:${utcMinutes}:${utcSeconds}`;
+                
+                // UTC date formatting: e.g., "15 MAY 2026" (as per current date)
+                const utcDay = String(now.getUTCDate()).padStart(2, '0');
+                const utcMonth = now.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+                const utcYear = now.getUTCFullYear();
+                const utcDateString = `${utcDay} ${utcMonth} ${utcYear}`;
+                
+                const utcTimeEl = document.getElementById('utcTime');
+                const utcDateEl = document.getElementById('utcDate');
+                if (utcTimeEl) utcTimeEl.textContent = utcTimeString + ' UTC';
+                if (utcDateEl) utcDateEl.textContent = utcDateString;
+            }
+
+            // Update local time (user's system time)
+            function updateLocalTime() {
+                const now = new Date();
+                const localHours = String(now.getHours()).padStart(2, '0');
+                const localMinutes = String(now.getMinutes()).padStart(2, '0');
+                const localSeconds = String(now.getSeconds()).padStart(2, '0');
+                const localTimeString = `${localHours}:${localMinutes}:${localSeconds}`;
+                
+                const localEl = document.getElementById('localTimeValue');
+                if (localEl) localEl.textContent = localTimeString;
+            }
+
+            // Immediate update and then every second
+            updateUTCDisplay();
+            updateLocalTime();
+            
+            setInterval(() => {
+                updateUTCDisplay();
+                updateLocalTime();
+            }, 1000);
+        })();
+    </script>
 </body>
 </html>
