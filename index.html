@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Typhoon Forecast Suite</title>
 
     <style>
+
         *{
             margin:0;
             padding:0;
@@ -18,63 +19,62 @@
             justify-content:center;
             align-items:center;
             padding:24px;
-            overflow-x:hidden;
 
             font-family:'Inter','Segoe UI',sans-serif;
 
             background:
-            radial-gradient(circle at top left, rgba(120,170,255,0.15), transparent 30%),
-            radial-gradient(circle at bottom right, rgba(255,170,220,0.08), transparent 25%),
-            linear-gradient(180deg,#0b1420 0%, #101d2d 100%);
+            radial-gradient(circle at top left, rgba(120,170,255,0.14), transparent 30%),
+            radial-gradient(circle at bottom right, rgba(255,180,220,0.08), transparent 28%),
+            linear-gradient(180deg,#0b1320 0%, #101b2b 100%);
 
-            color:#eaf4ff;
+            color:#ecf5ff;
+            overflow-x:hidden;
         }
-
-        /* soft weather grid */
 
         .background-overlay{
             position:fixed;
             inset:0;
 
             background-image:
-            linear-gradient(rgba(150,190,255,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(150,190,255,0.06) 1px, transparent 1px);
+            linear-gradient(rgba(180,220,255,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(180,220,255,0.05) 1px, transparent 1px);
 
-            background-size:32px 32px;
+            background-size:34px 34px;
+
             pointer-events:none;
         }
 
         .card{
             width:100%;
-            max-width:760px;
+            max-width:780px;
 
             background:rgba(12,20,34,0.88);
 
-            border:1px solid rgba(160,210,255,0.18);
+            border:1px solid rgba(180,220,255,0.14);
 
-            border-radius:28px;
+            border-radius:30px;
 
             backdrop-filter:blur(18px);
 
             padding:34px;
 
             box-shadow:
-            0 20px 50px rgba(0,0,0,0.45),
-            0 0 40px rgba(120,170,255,0.08);
+            0 24px 60px rgba(0,0,0,0.45),
+            0 0 30px rgba(120,170,255,0.08);
 
             position:relative;
         }
 
-        /* UTC BOX */
+        /* UTC */
 
         .utc-corner{
             position:absolute;
             top:22px;
             right:22px;
 
-            background:rgba(20,34,52,0.85);
+            background:rgba(20,32,50,0.85);
 
-            border:1px solid rgba(170,220,255,0.22);
+            border:1px solid rgba(170,220,255,0.18);
 
             border-radius:14px;
 
@@ -82,36 +82,40 @@
 
             text-align:right;
 
-            backdrop-filter:blur(10px);
+            backdrop-filter:blur(8px);
         }
 
         .utc-time{
             font-size:1.05rem;
             font-weight:700;
-            color:#bfe1ff;
+            color:#c7e4ff;
             letter-spacing:1px;
         }
 
         .utc-date{
             margin-top:2px;
-            font-size:0.7rem;
-            color:#9bb7d8;
-            letter-spacing:1.5px;
+            font-size:0.72rem;
+            color:#9db7d4;
+            letter-spacing:1.4px;
         }
 
         /* HEADER */
 
         .header{
             margin-bottom:30px;
-            padding-right:140px;
+            padding-right:150px;
         }
 
         .header h1{
             font-size:2rem;
             font-weight:800;
-            letter-spacing:-0.5px;
 
-            background:linear-gradient(90deg,#ffffff,#a9d0ff,#d8c1ff);
+            background:linear-gradient(
+                90deg,
+                #ffffff,
+                #b9dcff,
+                #e5c8ff
+            );
 
             -webkit-background-clip:text;
             -webkit-text-fill-color:transparent;
@@ -120,44 +124,45 @@
         }
 
         .subtitle{
-            color:#9db6cf;
+            color:#9eb8d3;
             font-size:0.82rem;
-            letter-spacing:2px;
             text-transform:uppercase;
+            letter-spacing:2px;
+            line-height:1.6;
         }
 
-        /* TOOL GRID */
+        /* TOOLS */
 
         .tool-list{
             display:flex;
             flex-direction:column;
-            gap:14px;
+            gap:15px;
         }
 
         .tool-item{
             background:rgba(18,30,48,0.72);
 
-            border:1px solid rgba(120,170,230,0.18);
+            border:1px solid rgba(140,190,255,0.15);
 
             border-radius:18px;
 
-            padding:16px 18px;
+            padding:17px 18px;
 
             transition:0.25s ease;
 
-            box-shadow:0 6px 18px rgba(0,0,0,0.22);
+            box-shadow:0 8px 20px rgba(0,0,0,0.2);
         }
 
         .tool-item:hover{
             transform:translateY(-2px);
 
-            border-color:rgba(160,210,255,0.45);
+            background:rgba(24,40,62,0.95);
 
-            background:rgba(24,40,60,0.92);
+            border-color:rgba(180,220,255,0.4);
 
             box-shadow:
-            0 12px 28px rgba(0,0,0,0.35),
-            0 0 18px rgba(140,190,255,0.12);
+            0 12px 28px rgba(0,0,0,0.32),
+            0 0 18px rgba(130,190,255,0.12);
         }
 
         .tool-label{
@@ -167,25 +172,25 @@
 
             margin-bottom:10px;
 
-            font-size:0.78rem;
+            color:#d7ecff;
+
+            font-size:0.8rem;
             font-weight:700;
+
             letter-spacing:1.7px;
-
-            color:#c7e4ff;
-
             text-transform:uppercase;
         }
 
         .extra-badge{
-            background:rgba(255,190,230,0.14);
+            background:rgba(255,190,225,0.14);
 
-            color:#ffd7ef;
+            border:1px solid rgba(255,210,240,0.16);
 
-            border:1px solid rgba(255,200,230,0.18);
-
-            border-radius:999px;
+            color:#ffd9ef;
 
             padding:4px 10px;
+
+            border-radius:999px;
 
             font-size:0.58rem;
 
@@ -193,26 +198,27 @@
         }
 
         .tool-desc{
-            font-size:0.78rem;
             color:#9db6cf;
+            font-size:0.79rem;
+            line-height:1.55;
+
             margin-bottom:10px;
-            line-height:1.5;
         }
 
         .tool-link{
             display:block;
 
-            text-decoration:none;
+            background:rgba(8,18,32,0.72);
 
-            background:rgba(8,18,32,0.75);
-
-            border:1px solid rgba(140,180,255,0.12);
+            border:1px solid rgba(160,210,255,0.1);
 
             border-radius:10px;
 
             padding:10px 12px;
 
-            color:#bfe0ff;
+            text-decoration:none;
+
+            color:#bfe1ff;
 
             font-size:0.75rem;
 
@@ -222,9 +228,9 @@
         }
 
         .tool-link:hover{
-            border-color:rgba(170,220,255,0.4);
+            background:rgba(14,28,46,0.96);
 
-            background:rgba(12,28,48,0.95);
+            border-color:rgba(180,220,255,0.35);
 
             color:#ffffff;
         }
@@ -232,9 +238,9 @@
         /* FOOTER */
 
         .footer{
-            margin-top:26px;
+            margin-top:28px;
 
-            border-top:1px solid rgba(150,190,255,0.12);
+            border-top:1px solid rgba(170,210,255,0.1);
 
             padding-top:18px;
 
@@ -242,21 +248,24 @@
             justify-content:space-between;
             align-items:center;
 
-            gap:12px;
             flex-wrap:wrap;
+            gap:12px;
         }
 
         .tagline{
-            color:#91acc8;
-            font-size:0.75rem;
-            letter-spacing:2px;
+            color:#92afca;
+
+            font-size:0.74rem;
+
             text-transform:uppercase;
+
+            letter-spacing:2px;
         }
 
         .local-time-box{
-            background:rgba(20,35,55,0.75);
+            background:rgba(18,34,52,0.8);
 
-            border:1px solid rgba(170,210,255,0.15);
+            border:1px solid rgba(170,210,255,0.14);
 
             border-radius:999px;
 
@@ -264,11 +273,11 @@
 
             font-size:0.78rem;
 
-            color:#d4e9ff;
+            color:#d5eaff;
         }
 
         .local-time-box span{
-            color:#9fd0ff;
+            color:#9fd1ff;
             font-weight:700;
         }
 
@@ -280,7 +289,7 @@
 
             .header{
                 padding-right:0;
-                margin-top:70px;
+                margin-top:72px;
             }
 
             .utc-corner{
@@ -292,6 +301,7 @@
                 font-size:1.65rem;
             }
         }
+
     </style>
 </head>
 
@@ -312,14 +322,17 @@
 
         <div class="header">
             <h1>Typhoon Forecast Suite</h1>
+
             <div class="subtitle">
-                Satellite Analysis · Forecast Monitoring · Tropical Cyclone Tools
+                Tropical Cyclone Analysis · Satellite Monitoring · Forecast Graphics
             </div>
         </div>
 
         <!-- TOOLS -->
 
         <div class="tool-list">
+
+            <!-- MAIN SAT -->
 
             <div class="tool-item">
                 <div class="tool-label">
@@ -328,7 +341,7 @@
                 </div>
 
                 <div class="tool-desc">
-                    Primary satellite viewer for storm structure, convection, and animation loops.
+                    Primary satellite viewer for convection, eye structure, and animation loops.
                 </div>
 
                 <a class="tool-link"
@@ -338,21 +351,25 @@
                 </a>
             </div>
 
+            <!-- GLOBAL -->
+
             <div class="tool-item">
                 <div class="tool-label">
-                    🌍 GLOBAL SATELLITE PLOTTER
+                    🌍 GLOBAL SATELLITE IMAGERY
                 </div>
 
                 <div class="tool-desc">
-                    Global basin satellite monitoring and wide-area tropical analysis.
+                    Wide-area basin monitoring and global tropical disturbance analysis.
                 </div>
 
                 <a class="tool-link"
-                href="https://colab.research.google.com/drive/1uQnPY5SrR3G6ARhlNvnxs_xVBp8supLo?authuser=0#scrollTo=6q5JWvgvCVkl"
+                href="https://colab.research.google.com/drive/1eEN-_vx5EMb6op5eKhfe1tnSv_Wpvl8H?authuser=0"
                 target="_blank">
-                Open Global Satellite Plotter
+                Open Global Satellite Imagery Plotter
                 </a>
             </div>
+
+            <!-- GFS -->
 
             <div class="tool-item">
                 <div class="tool-label">
@@ -360,15 +377,17 @@
                 </div>
 
                 <div class="tool-desc">
-                    Microwave passes and GFS guidance for structure and intensity trends.
+                    Microwave passes and GFS guidance for intensity and storm structure analysis.
                 </div>
 
                 <a class="tool-link"
-                href="https://colab.research.google.com/drive/1uQnPY5SrR3G6ARhlNvnxs_xVBp8supLo?authuser=0"
+                href="https://colab.research.google.com/drive/1uQnPY5SrR3G6ARhlNvnxs_xVBp8supLo?authuser=0#scrollTo=6q5JWvgvCVkl"
                 target="_blank">
-                Open GFS & Microwave Plotter
+                Open GFS & Microwave Imagery Plotter
                 </a>
             </div>
+
+            <!-- FORECAST CONE -->
 
             <div class="tool-item">
                 <div class="tool-label">
@@ -376,7 +395,7 @@
                 </div>
 
                 <div class="tool-desc">
-                    Cone graphics, radar overlays, and projected track visualization.
+                    Forecast cone graphics, radar overlays, and projected storm motion tools.
                 </div>
 
                 <a class="tool-link"
@@ -386,13 +405,15 @@
                 </a>
             </div>
 
+            <!-- OUTLOOK -->
+
             <div class="tool-item">
                 <div class="tool-label">
-                    📊 SATELLITE OUTLOOK PLOTTER
+                    📊 SATELLITE OUTLOOK
                 </div>
 
                 <div class="tool-desc">
-                    Outlook graphics and tropical disturbance development analysis.
+                    Tropical outlook graphics and disturbance development monitoring.
                 </div>
 
                 <a class="tool-link"
@@ -402,13 +423,15 @@
                 </a>
             </div>
 
+            <!-- CHASE -->
+
             <div class="tool-item">
                 <div class="tool-label">
                     🌪️ CHASE SATELLITE PLOTTER
                 </div>
 
                 <div class="tool-desc">
-                    Focused cyclone tracking and enhanced storm-following display tools.
+                    Focused cyclone tracking and enhanced storm-following visualization.
                 </div>
 
                 <a class="tool-link"
@@ -418,13 +441,15 @@
                 </a>
             </div>
 
+            <!-- BEST TRACK -->
+
             <div class="tool-item">
                 <div class="tool-label">
                     🌀 BEST TRACK PLOTTER
                 </div>
 
                 <div class="tool-desc">
-                    Historical and operational best-track mapping for tropical cyclones.
+                    Historical and operational best-track plotting for tropical cyclones.
                 </div>
 
                 <a class="tool-link"
@@ -459,7 +484,7 @@
 
             const now = new Date();
 
-            // UTC
+            // UTC TIME
 
             const utcTime =
                 String(now.getUTCHours()).padStart(2,'0') + ':' +
@@ -481,7 +506,7 @@
             document.getElementById('utcDate').textContent =
                 utcDate;
 
-            // LOCAL
+            // LOCAL TIME
 
             const localTime =
                 String(now.getHours()).padStart(2,'0') + ':' +
