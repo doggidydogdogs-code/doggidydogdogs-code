@@ -1,0 +1,3879 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# SATELLITE IMAGERY TOOL — PART 1 (fetch & prepare) – COMPLETE FIXED v11
+# WITH AUTO .netrc CREATION & UNIVERSAL EYE/CDO TEMP STATS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── APPEARANCE SETTINGS ────────────────────────────────────────────────────────
+THEME               = 'light'
+OUTPUT_DPI          = 114
+COLORBAR_WIDTH      = 0.010
+COLORBAR_PAD        = 0.070
+GRID_LABEL_SIZE     = 14
+LEFT_MARGIN         = 0.07;  RIGHT_MARGIN  = 0.07
+TOP_MARGIN          = 0.13;  BOTTOM_MARGIN = 0.07
+LEFT_FONT_SIZE      = 14;    LEFT_BOLD     = True
+LEFT_GAP_SIZE       = 0.019; LEFT_BOTTOM_DISTANCE  = 1.005
+RIGHT_FONT_SIZE     = 13;    RIGHT_BOLD    = False
+RIGHT_GAP_SIZE      = 0.018; RIGHT_BOTTOM_DISTANCE = 1.005
+EYE_RADIUS_DEG      = 0.75;  CDO_RADIUS_DEG = 3.5
+CBAR_LABEL_SIZE     = 14;    CBAR_TICK_SIZE = 13
+CBAR_PAD_FRACTION   = 0.28
+LABEL_PAD_TOP = LABEL_PAD_BOTTOM = LABEL_PAD_LEFT = LABEL_PAD_RIGHT = 0.04
+TITLE_LINE_SPACING  = 0.0002
+
+SHOW_MAP_TEXT_BOX        = True
+MAP_TEXT_BOX_X           = 0.005;  MAP_TEXT_BOX_Y           = 0.005
+MAP_TEXT_BOX_BG_COLOR    = 'black'; MAP_TEXT_BOX_BG_OPACITY  = 0.5
+MAP_TEXT_BOX_OUTLINE_WIDTH= 1;     MAP_TEXT_BOX_OUTLINE_COLOR= 'black'
+MAP_TEXT_BOX_OUTLINE_OPACITY= 0.8; MAP_TEXT_BOX_TEXT_COLOR  = 'white'
+MAP_TEXT_BOX_FONT_SIZE   = 12;     MAP_TEXT_BOX_FONT_WEIGHT = 'normal'
+MAP_TEXT_BOX_PAD         = 8
+MAP_TEXT_BOX_CUSTOM_TEXT = "CMAP imported by Althea Kate (@thea_girl)"
+
+# ── THREAD / PERFORMANCE SETTINGS ──────────────────────────────────────────────
+FETCH_THREADS      = 4
+RESAMPLE_THREADS   = 2
+PLOT_THREADS       = 1
+USE_GPU            = False
+
+# ── DISK CACHE SETTINGS ────────────────────────────────────────────────────────
+DISK_CACHE_DIR       = '/content/_sat_cache'
+ANIM_FRAME_CACHE_DIR = '/content/_anim_frames'
+
+# ── STORM THRESHOLDS ───────────────────────────────────────────────────────────
+HURRICANE_CAT1_THRESHOLD = 64;  HURRICANE_CAT2_THRESHOLD = 83
+HURRICANE_CAT3_THRESHOLD = 96;  HURRICANE_CAT4_THRESHOLD = 113
+HURRICANE_CAT5_THRESHOLD = 137
+TYPHOON_TY_THRESHOLD     = 64;  TYPHOON_STS_THRESHOLD    = 48;  TYPHOON_TS_THRESHOLD = 34
+SUPER_TYPHOON_THRESHOLD  = 137
+CYCLONE_CAT1_THRESHOLD   = 63;  CYCLONE_CAT2_THRESHOLD   = 86
+CYCLONE_CAT3_THRESHOLD   = 107; CYCLONE_CAT4_THRESHOLD   = 127; CYCLONE_CAT5_THRESHOLD = 137
+IOCYCLONE_CAT1_THRESHOLD = 63;  IOCYCLONE_CAT2_THRESHOLD = 86
+IOCYCLONE_CAT3_THRESHOLD = 107; IOCYCLONE_CAT4_THRESHOLD = 127; IOCYCLONE_CAT5_THRESHOLD = 137
+
+# ── EUMETSAT CREDENTIALS ────────────────────────────────────────────────────────
+EUMETSAT_CONSUMER_KEY    = "JlEfq3QjM7ww_tduMR7iUQh4vvYa"
+EUMETSAT_CONSUMER_SECRET = "CWVb7FoHYQRWDhG6paZIy8RENAIa"
+
+# ── NASA EARTHDATA CREDENTIALS ────────────────────────────────────────────────
+NASA_EDL_TOKEN = "eyJ0eXAiOiJKV1QiLCJvcmlnaW4iOiJFYXJ0aGRhdGEgTG9naW4iLCJzaWciOiJlZGxqd3RwdWJrZXlfb3BzIiwiYWxnIjoiUlMyNTYifQ.eyJ0eXBlIjoiVXNlciIsInVpZCI6ImFsdGhlYV9rYXRlIiwiZXhwIjoxNzg0MjQ3MjQ5LCJpYXQiOjE3NzkwNjMyNDksImlzcyI6Imh0dHBzOi8vdXJzLmVhcnRoZGF0YS5uYXNhLmdvdiIsImlkZW50aXR5X3Byb3ZpZGVyIjoiZWRsX29wcyIsImFjciI6ImVkbCIsImFzc3VyYW5jZV9sZXZlbCI6M30.XxdlX_LoIcm9MLNp0ue3j3TkF8QPY48Eq_dOvwA7zZa7TSLvmAahJ7qSQrHV0mJkWJ-7bCbYAqE_0X2UZBYttES4oMYTrrmgUtNxT6dpLIVk5Zzlusa5baULEpANxiwLkFFMOObw_F5q3MN2X0gKG1e4-j_kBnGeN-mHRreR6BdbIpuP2puBIoTr_W34HmzytcZABCXTzVJEcjbH1QudGyuszTT4G40fklQ4bjnEsO9tmUM4kemTe7cD26KMUR7dCD-ETLOZjaScyC-c3rDRYzBJ7WaTYgoXYCtIScu8JXGNojkPibiH1QQSp-2oVnCS3dcHWRBgOwO6yH6zQiHBVA"
+
+# ── NASA EARTHDATA USERNAME/PASSWORD (for .netrc auto-creation) ───────────────
+NASA_USERNAME = "althea_kate"
+NASA_PASSWORD = "Ilovechocolate09"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# AUTO-CREATE .netrc FILE FOR NASA AUTHENTICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+import os
+netrc_path = os.path.expanduser("~/.netrc")
+if not os.path.exists(netrc_path):
+    print("  Creating .netrc file for NASA authentication...")
+    with open(netrc_path, 'w') as f:
+        f.write(f"machine urs.earthdata.nasa.gov login {NASA_USERNAME} password {NASA_PASSWORD}\n")
+    os.chmod(netrc_path, 0o600)
+    print(f"  ✅ .netrc created at {netrc_path}")
+else:
+    # Verify it has the correct entry
+    with open(netrc_path, 'r') as f:
+        if 'urs.earthdata.nasa.gov' not in f.read():
+            print("  Updating .netrc with NASA credentials...")
+            with open(netrc_path, 'a') as f:
+                f.write(f"\nmachine urs.earthdata.nasa.gov login {NASA_USERNAME} password {NASA_PASSWORD}\n")
+            os.chmod(netrc_path, 0o600)
+            print("  ✅ .netrc updated")
+
+# ── ASCAT CONSTANTS ────────────────────────────────────────────────────────────
+METOP_COLLECTIONS = {
+    'A':   {'name': 'Metop-A', 'collection': 'EO:EUM:DAT:METOP:OSI-104', 'status': 'Retired', 'pattern': r'ascat_\d{8}_\d{6}_metopa'},
+    'B':   {'name': 'Metop-B', 'collection': 'EO:EUM:DAT:METOP:OSI-104', 'status': 'Operational', 'pattern': r'ascat_\d{8}_\d{6}_metopb'},
+    'C':   {'name': 'Metop-C', 'collection': 'EO:EUM:DAT:METOP:OSI-104', 'status': 'Operational', 'pattern': r'ascat_\d{8}_\d{6}_metopc'},
+    'ALL': {'name': 'All Satellites', 'collection': 'EO:EUM:DAT:METOP:OSI-104', 'status': 'All available', 'pattern': r'ascat_\d{8}_\d{6}_metop[a-c]'},
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IMPORTS
+# ═══════════════════════════════════════════════════════════════════════════════
+import subprocess, sys, importlib, datetime, os, shutil, re, tarfile, ftplib, math
+import time, concurrent.futures, warnings, gc, requests, bz2, gzip, glob
+from io import BytesIO
+import zipfile
+
+def install_and_import(pkg, imp=None):
+    imp = imp or pkg.replace('-','_').replace('.','_')
+    try: importlib.import_module(imp)
+    except ImportError:
+        try: subprocess.check_call([sys.executable,"-m","pip","install",pkg,"--quiet"])
+        except: print(f"Failed to install {pkg}")
+
+PACKAGES = {
+    'numpy':'numpy','matplotlib':'matplotlib','requests':'requests','pillow':'PIL',
+    'imageio':'imageio','imageio-ffmpeg':'imageio_ffmpeg','netCDF4':'netCDF4',
+    'h5netcdf':'h5netcdf','s3fs':'s3fs','cartopy':'cartopy','satpy':'satpy',
+    'pyresample':'pyresample','ipython':'IPython','eumdac':'eumdac',
+    'h5py':'h5py','beautifulsoup4':'bs4','scipy':'scipy'
+}
+print("Checking dependencies...")
+for pkg, imp in PACKAGES.items(): install_and_import(pkg, imp)
+
+import numpy as np
+import matplotlib; matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+import cartopy.crs as ccrs; import cartopy.feature as cf
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from satpy import Scene; from pyresample import AreaDefinition
+import xarray as xr
+import s3fs; import imageio.v2 as imageio; from PIL import Image
+from IPython.display import clear_output, display, Image as IPImage, FileLink
+import h5py
+from bs4 import BeautifulSoup
+from scipy.interpolate import griddata
+warnings.filterwarnings("ignore")
+print("All imports successful!")
+
+# ── GPU setup ──────────────────────────────────────────────────────────────────
+_xp = np
+if USE_GPU:
+    try:
+        import cupy as cp
+        _xp = cp
+        print("GPU (CuPy) enabled")
+    except ImportError:
+        print("CuPy not available; falling back to CPU")
+        USE_GPU = False
+
+try:
+    subprocess.run(["eumdac","set-credentials",EUMETSAT_CONSUMER_KEY,EUMETSAT_CONSUMER_SECRET],
+                   check=True, capture_output=True, text=True)
+    print("EUMETSAT credentials configured.")
+except subprocess.CalledProcessError:
+    print("EUMETSAT credentials already set – continuing.")
+
+os.makedirs(DISK_CACHE_DIR, exist_ok=True)
+os.makedirs(ANIM_FRAME_CACHE_DIR, exist_ok=True)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# COLORMAP LOADING
+# ═══════════════════════════════════════════════════════════════════════════════
+import sys
+if 'cmaps' in sys.modules:
+    del sys.modules['cmaps']
+import cmaps
+
+def _cmap_to_celsius(vmin, vmax):
+    if vmin > 200: vmin -= 273.15
+    if vmax > 200: vmax -= 273.15
+    return vmin, vmax
+
+AVAILABLE_CMAPS = {}
+for attr_name in dir(cmaps):
+    if attr_name.startswith('_'):
+        continue
+    obj = getattr(cmaps, attr_name)
+    if not callable(obj):
+        continue
+    try:
+        result = obj()
+        if isinstance(result, tuple) and len(result) in (2, 3):
+            cmap = result[0]
+            if len(result) == 3:
+                vmin, vmax = result[1], result[2]
+            else:
+                vmin, vmax = -100, 50
+            vmin, vmax = _cmap_to_celsius(vmin, vmax)
+            AVAILABLE_CMAPS[attr_name] = (cmap, vmin, vmax)
+        elif isinstance(result, (plt.matplotlib.colors.Colormap, LinearSegmentedColormap)):
+            AVAILABLE_CMAPS[attr_name] = (result, -100, 50)
+    except Exception:
+        pass
+
+print(f"  Loaded {len(AVAILABLE_CMAPS)} colormaps")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STORM CLASSIFICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+def classify_storm(wind_kt, basin="", lat=None, status=None):
+    if status and status.upper() == 'RL':
+        return "Remnant Low", "RL", "#808080", False
+
+    basin = basin.upper() if basin else ""
+
+    if basin in ['AL','ATLANTIC','EP','CP','EASTERN PACIFIC','CENTRAL PACIFIC']:
+        if wind_kt >= HURRICANE_CAT5_THRESHOLD: return "Category 5 Major Hurricane","Cat-5 MH","#ff0000", False
+        elif wind_kt >= HURRICANE_CAT4_THRESHOLD: return "Category 4 Major Hurricane","Cat-4 MH","#ff4444", False
+        elif wind_kt >= HURRICANE_CAT3_THRESHOLD: return "Category 3 Major Hurricane","Cat-3 MH","#ff8888", False
+        elif wind_kt >= HURRICANE_CAT2_THRESHOLD: return "Category 2 Hurricane","Cat-2 H","#ffaa66", False
+        elif wind_kt >= HURRICANE_CAT1_THRESHOLD: return "Category 1 Hurricane","Cat-1 H","#ffcc88", False
+        elif wind_kt >= 50: return "Tropical Storm","TS","#ffff66", False
+        elif wind_kt >= 34: return "Tropical Depression","TD","#aaffaa", False
+        else: return "Disturbance","DB","#cccccc", True
+    elif basin in ['WP','WESTERN PACIFIC','W PACIFIC']:
+        if wind_kt >= SUPER_TYPHOON_THRESHOLD: return "Super Typhoon","STY","#ff0066", False
+        elif wind_kt >= TYPHOON_TY_THRESHOLD: return "Typhoon","TY","#ff6600", False
+        elif wind_kt >= TYPHOON_STS_THRESHOLD: return "Severe Tropical Storm","STS","#ffcc00", False
+        elif wind_kt >= TYPHOON_TS_THRESHOLD: return "Tropical Storm","TS","#ffff66", False
+        elif wind_kt >= 34: return "Tropical Depression","TD","#aaffaa", False
+        else: return "Disturbance","DB","#cccccc", True
+    elif basin in ['SH','SOUTHERN HEMISPHERE','AUSTRALIAN','AUS']:
+        if wind_kt >= CYCLONE_CAT5_THRESHOLD: return "Category 5 Severe Tropical Cyclone","Cat-5 TC","#ff0066", False
+        elif wind_kt >= CYCLONE_CAT4_THRESHOLD: return "Category 4 Severe Tropical Cyclone","Cat-4 TC","#ff4444", False
+        elif wind_kt >= CYCLONE_CAT3_THRESHOLD: return "Category 3 Severe Tropical Cyclone","Cat-3 TC","#ff8888", False
+        elif wind_kt >= CYCLONE_CAT2_THRESHOLD: return "Category 2 Tropical Cyclone","Cat-2 TC","#ffaa66", False
+        elif wind_kt >= CYCLONE_CAT1_THRESHOLD: return "Category 1 Tropical Cyclone","Cat-1 TC","#ffcc88", False
+        elif wind_kt >= 34: return "Tropical Cyclone","TC","#ffff66", False
+        else: return "Tropical Low","TL","#cccccc", True
+    elif basin in ['IO','INDIAN OCEAN','NI','SI']:
+        if wind_kt >= IOCYCLONE_CAT5_THRESHOLD: return "Super Cyclonic Storm","Super CS","#ff0066", False
+        elif wind_kt >= IOCYCLONE_CAT4_THRESHOLD: return "Very Intense Cyclonic Storm","VICS","#ff4444", False
+        elif wind_kt >= IOCYCLONE_CAT3_THRESHOLD: return "Intense Cyclonic Storm","ICS","#ff8888", False
+        elif wind_kt >= IOCYCLONE_CAT2_THRESHOLD: return "Cyclonic Storm","CS","#ffaa66", False
+        elif wind_kt >= IOCYCLONE_CAT1_THRESHOLD: return "Severe Cyclonic Storm","SCS","#ffcc88", False
+        elif wind_kt >= 34: return "Deep Depression","DD","#ffff66", False
+        else: return "Depression","D","#cccccc", True
+    else:
+        if wind_kt >= 137: return "Super Cyclone","Super","#ff0066", False
+        elif wind_kt >= 113: return "Intense Cyclone","Intense","#ff4444", False
+        elif wind_kt >= 96: return "Severe Cyclone","Severe","#ff8888", False
+        elif wind_kt >= 64: return "Cyclone","Cyclone","#ffaa66", False
+        elif wind_kt >= 50: return "Strong Storm","Storm","#ffff66", False
+        elif wind_kt >= 34: return "Tropical Storm","TS","#aaffaa", False
+        else: return "Disturbance","DB","#cccccc", True
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STORM DISPLAY NAME
+# ═══════════════════════════════════════════════════════════════════════════════
+def get_storm_display_name(storm_pt, source_type=''):
+    name = storm_pt.get('name', '') or storm_pt.get('storm_name', '')
+    storm_id = storm_pt.get('storm_id', '')
+    basin = storm_pt.get('basin', '') or storm_pt.get('origin_basin', '')
+    wind = int(storm_pt.get('wind', storm_pt.get('winds', 0)))
+    atcf_id = storm_pt.get('atcf_id', '')
+    status = storm_pt.get('status', '')
+    pressure = storm_pt.get('pressure', storm_pt.get('mslp', ''))
+    lat = storm_pt.get('latitude', storm_pt.get('lat', 0))
+    lon = storm_pt.get('longitude', storm_pt.get('lon', 0))
+
+    result = classify_storm(wind, basin, lat=lat, status=status)
+    cat_full, cat_short, color, is_weak = result
+
+    # Handle remnant low
+    if status and status.upper() == 'RL':
+        return f"Remnant Low", "Remnant Low"
+
+    # Build position string
+    lat_str = f"{abs(lat):.1f}°{'N' if lat >= 0 else 'S'}"
+    lon_str = f"{abs(lon):.1f}°{'E' if lon >= 0 else 'W'}"
+    
+    # Format pressure if available
+    pres_str = ""
+    if pressure:
+        try:
+            pres_str = f", {int(float(pressure))} mb"
+        except:
+            pass
+
+    # Named storm (wind >= 34kt with real name)
+    if wind >= 34 and name and name.upper() != 'INVEST' and not re.match(r'^[A-Z]{2}\d{2,4}$', name):
+        label = f"{cat_full} {name} • {wind} kt{pres_str}\nPosition: {lat_str}, {lon_str}"
+        return label, cat_full
+    
+    # INVEST or unnamed
+    invest_id = storm_pt.get('invest_id')
+    if not invest_id and atcf_id:
+        match = re.search(r'([0-9]{2,3})([A-Z])', atcf_id)
+        if match:
+            invest_id = f"{match.group(1)}{match.group(2)}"
+    if not invest_id and name:
+        match = re.search(r'([0-9]{2,3})([A-Z])', name)
+        if match:
+            invest_id = match.group(0)
+    if not invest_id and storm_id:
+        match = re.search(r'([0-9]{2,3})', storm_id)
+        if match:
+            basin_letter = basin[0] if basin else 'W'
+            invest_id = f"{match.group(1)}{basin_letter}"
+
+    if invest_id:
+        label = f"INVEST {invest_id} • {wind} kt{pres_str}\nPosition: {lat_str}, {lon_str}"
+    else:
+        fallback = storm_id or name or 'INVEST'
+        label = f"INVEST {fallback} • {wind} kt{pres_str}\nPosition: {lat_str}, {lon_str}"
+    
+    return label, cat_full
+
+    invest_id = storm_pt.get('invest_id')
+    if not invest_id and atcf_id:
+        match = re.search(r'([0-9]{2,3})([A-Z])', atcf_id)
+        if match:
+            invest_id = f"{match.group(1)}{match.group(2)}"
+    if not invest_id and name:
+        match = re.search(r'([0-9]{2,3})([A-Z])', name)
+        if match:
+            invest_id = match.group(0)
+    if not invest_id and storm_id:
+        match = re.search(r'([0-9]{2,3})', storm_id)
+        if match:
+            basin_letter = basin[0] if basin else 'W'
+            invest_id = f"{match.group(1)}{basin_letter}"
+
+    if invest_id:
+        num_match = re.search(r'([0-9]{2,3})', str(invest_id))
+        if num_match:
+            letter_match = re.search(r'([A-Z])', str(invest_id).upper())
+            if letter_match:
+                clean_id = f"{num_match.group(1)}{letter_match.group(1)}"
+            else:
+                basin_letter = basin[0] if basin else 'W'
+                clean_id = f"{num_match.group(1)}{basin_letter}"
+            return f"INVEST {clean_id}", cat_full
+        return f"INVEST {invest_id}", cat_full
+
+    fallback = storm_id or name or 'INVEST'
+    return f"INVEST {fallback}", cat_full
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BEST TRACK FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+def _parse_bt_line(line):
+    parts = [p.strip() for p in line.strip().split(',')]
+    
+    if len(parts) < 10:
+        if len(parts) < 7:
+            return None
+        basin = parts[0] if parts[0] else 'WP'
+        storm_num = parts[1].zfill(2) if parts[1] else '01'
+        date_str = parts[2].strip()
+        if len(date_str) < 10:
+            return None
+        try:
+            dt = datetime.datetime(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8]), int(date_str[8:10]))
+        except:
+            return None
+        lat = lon = None
+        wind = 0
+        for p in parts:
+            p = p.strip()
+            if p and ('N' in p or 'S' in p) and lat is None:
+                try:
+                    val = float(p[:-1])
+                    lat = val / 10.0 * (1 if 'N' in p else -1)
+                except:
+                    pass
+            elif p and ('E' in p or 'W' in p) and lon is None:
+                try:
+                    val = float(p[:-1])
+                    lon = val / 10.0 * (1 if 'E' in p else -1)
+                except:
+                    pass
+            elif p and p.replace('-','').isdigit() and lat is not None and lon is not None:
+                wind = int(p)
+                break
+        if lat is None or lon is None:
+            return None
+        return {'dt': dt, 'lat': lat, 'lon': lon, 'wind': wind, 'pressure': 0,
+                'category': '', 'name': f"{basin}{storm_num}", 'storm_id': f"{basin}{storm_num}",
+                'basin': basin, 'storm_num': storm_num, 'is_invest': (wind < 34)}
+    
+    if len(parts) < 28:
+        return None
+    basin, storm_num, date_str = parts[0], parts[1], parts[2]
+    if len(date_str) < 10:
+        return None
+    dt = datetime.datetime(int(date_str[:4]), int(date_str[4:6]), int(date_str[6:8]), int(date_str[8:10]))
+    lat_s, lon_s = parts[6], parts[7]
+    try:
+        lat = float(lat_s[:-1])/10.0 * (1 if lat_s.endswith('N') else -1)
+        lon = float(lon_s[:-1])/10.0 * (1 if lon_s.endswith('E') else -1)
+    except:
+        return None
+    wind = int(parts[8]) if parts[8] else 0
+    pressure = int(parts[9]) if parts[9] else 0
+    name = parts[27] if len(parts) > 27 else ""
+    storm_id = f"{basin}{storm_num}"
+    has_real_name = bool(name) and not re.match(r'^[A-Z]{2}\d{2,4}$', name)
+    return {'dt': dt, 'lat': lat, 'lon': lon, 'wind': wind, 'pressure': pressure,
+            'category': parts[10] if len(parts) > 10 else '',
+            'name': name if name else storm_id, 'storm_id': storm_id,
+            'basin': basin, 'storm_num': storm_num, 'is_invest': (wind < 34) and not has_real_name}
+
+def fetch_jtwc_best_track(year, storm_num, basin='WP'):
+    data = []
+    url = f"https://www.metoc.navy.mil/jtwc/products/best-tracks/{year}/{year}s-bwp/bwp{year}.zip"
+    print(f"  Fetching JTWC: {url}")
+    try:
+        r = requests.get(url, timeout=30)
+        if r.status_code == 200:
+            zf = zipfile.ZipFile(BytesIO(r.content))
+            possible_names = [f"bwp{storm_num}{year}.dat", f"bwp{storm_num}{year}.txt",
+                             f"b{basin.lower()}{storm_num}{year}.dat", f"b{basin.lower()}{storm_num}{year}.txt"]
+            found_file = None
+            for name in possible_names:
+                if name in zf.namelist():
+                    found_file = name
+                    break
+            if not found_file:
+                for fname in zf.namelist():
+                    if storm_num in fname and fname.endswith(('.dat', '.txt')):
+                        found_file = fname
+                        break
+            if found_file:
+                for line in zf.open(found_file).read().decode().strip().split('\n'):
+                    if line.strip() and not line.startswith('#'):
+                        p = _parse_bt_line(line)
+                        if p: data.append(p)
+                data.sort(key=lambda x: x['dt'])
+                print(f"  Loaded {len(data)} track points")
+            else:
+                print(f"  Storm {storm_num} not found")
+        else:
+            print(f"  HTTP {r.status_code}")
+    except Exception as e:
+        print(f"  Error: {e}")
+    return data
+
+def fetch_best_track_data(source_type, identifier):
+    data = []
+    if source_type == 'temp':
+        year = identifier.get('year', datetime.datetime.now().year)
+        storm_num = identifier.get('storm_num', '01')
+        basin = identifier.get('basin', 'ep').lower()
+        url = f"https://www.natyphoon.top/atcf/temp/b{basin}{storm_num}{year}.dat"
+    elif source_type == 'invest':
+        year = identifier.get('year', datetime.datetime.now().year)
+        basin = identifier.get('basin', 'WP').upper()
+        letter = identifier.get('letter', 'A').upper()
+        invest_num = identifier.get('invest_num', '90')
+        url = f"https://www.natyphoon.top/atcf/invest/{year}invest/{basin}/{letter}/b{basin.lower()}{invest_num}{year}.dat"
+    else:
+        return []
+    print(f"  Fetching: {url}")
+    try:
+        r = requests.get(url, timeout=15)
+        if r.status_code == 200:
+            for line in r.text.strip().split('\n'):
+                if line.strip() and not line.startswith('#'):
+                    p = _parse_bt_line(line)
+                    if p: data.append(p)
+            data.sort(key=lambda x: x['dt'])
+            print(f"  Loaded {len(data)} track points")
+    except Exception as e:
+        print(f"  Error: {e}")
+    return data
+
+def interpolate_position(track_data, target_dt):
+    before = after = None
+    for pt in track_data:
+        if pt['dt'] <= target_dt: before = pt
+        if pt['dt'] >= target_dt and after is None: after = pt
+    if not before and not after: return None, None, None    
+    if not before: return after['lat'], after['lon'], after
+    if not after or before['dt'] == after['dt']: return before['lat'], before['lon'], before
+    frac = (target_dt - before['dt']).total_seconds() / (after['dt'] - before['dt']).total_seconds()
+    interp = before.copy()
+    interp.update({
+        'lat': before['lat'] + frac * (after['lat'] - before['lat']),
+        'lon': before['lon'] + frac * (after['lon'] - before['lon']),
+        'wind': int(before['wind'] + frac * (after['wind'] - before['wind'])),
+        'pressure': int(before['pressure'] + frac * (after['pressure'] - before['pressure']))
+    })
+    return interp['lat'], interp['lon'], interp
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ASCAT FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+def fetch_ascat_by_metop(metop_letter='C', output_dir="./ascat_data", hours_back=72, target_dt=None):
+    os.makedirs(output_dir, exist_ok=True)
+    sat_info = METOP_COLLECTIONS.get(metop_letter.upper(), METOP_COLLECTIONS['C'])
+    collection = sat_info['collection']
+    now = datetime.datetime.utcnow()
+
+    if target_dt:
+        search_start = (target_dt - datetime.timedelta(hours=hours_back)).strftime("%Y-%m-%dT%H:%M:%S")
+        search_end = (target_dt + datetime.timedelta(hours=hours_back)).strftime("%Y-%m-%dT%H:%M:%S")
+    else:
+        search_start = (now - datetime.timedelta(hours=hours_back)).strftime("%Y-%m-%dT%H:%M:%S")
+        search_end = now.strftime("%Y-%m-%dT%H:%M:%S")
+
+    cmd_search = ["eumdac", "search", "--collection", collection, "--start", search_start, "--end", search_end, "--limit", "100"]
+
+    try:
+        result = subprocess.run(cmd_search, capture_output=True, text=True, timeout=60)
+        if result.returncode != 0:
+            print(f"  Search failed: {result.stderr[:200]}")
+            return None
+
+        products = []
+        pattern = sat_info['pattern']
+        for line in result.stdout.strip().split('\n'):
+            line = line.strip()
+            if line and not line.startswith(('total', 'Collection', '---', '====')):
+                parts = line.split()
+                if parts and re.search(pattern, parts[0], re.IGNORECASE):
+                    match = re.search(r'(\d{8})[ _-](\d{6})', parts[0])
+                    if match:
+                        try:
+                            product_dt = datetime.datetime.strptime(f"{match.group(1)}_{match.group(2)}", "%Y%m%d_%H%M%S")
+                            products.append((parts[0], product_dt))
+                        except: pass
+        if not products:
+            print(f"  No {sat_info['name']} products found")
+            return None
+
+        reference_time = target_dt if target_dt else now
+        products.sort(key=lambda x: abs((x[1] - reference_time).total_seconds()))
+        product_name, product_dt = products[0]
+
+        print(f"\n  Selected: {product_name} at {product_dt.strftime('%Y-%m-%d %H:%M:%S UTC')}")
+
+        download_subdir = os.path.join(output_dir, f"dl_{product_dt.strftime('%Y%m%d%H%M%S')}_{os.getpid()}")
+        os.makedirs(download_subdir, exist_ok=True)
+
+        cmd_download = ["eumdac", "download", "--collection", collection, "--product", product_name, "--output", download_subdir]
+        print("  Downloading...")
+        subprocess.run(cmd_download, capture_output=True, text=True, timeout=300)
+
+        # Find nc files
+        nc_files = []
+        for root, dirs, files in os.walk(download_subdir):
+            for f in files:
+                if f.endswith('.nc'):
+                    nc_files.append(os.path.join(root, f))
+        
+        if nc_files:
+            main_files = [f for f in nc_files if 'manifest' not in os.path.basename(f).lower()]
+            file_path = main_files[0] if main_files else nc_files[0]
+            print(f"  NC file ready: {os.path.basename(file_path)}")
+            return {'file_path': file_path, 'product_name': product_name, 'datetime': product_dt,
+                    'satellite': sat_info['name'], 'metop_letter': metop_letter.upper()}
+        else:
+            print("  No .nc files found")
+            return None
+    except Exception as e:
+        print(f"  Error: {e}")
+        return None
+
+def read_all_ascat_vectors(nc_file_path):
+    try:
+        import netCDF4 as nc
+        ds = nc.Dataset(nc_file_path, 'r')
+        lons = ds.variables['lon'][:].flatten()
+        lats = ds.variables['lat'][:].flatten()
+        wind_speed = ds.variables['wind_speed'][:].flatten()
+        wind_dir = ds.variables['wind_dir'][:].flatten()
+        quality_flag = ds.variables['wvc_quality_flag'][:].flatten() if 'wvc_quality_flag' in ds.variables else None
+        ds.close()
+
+        mask = (~np.isnan(lons)) & (~np.isnan(lats)) & (~np.isnan(wind_speed)) & (~np.isnan(wind_dir))
+        if quality_flag is not None:
+            mask = mask & (quality_flag == 0)
+
+        lons, lats = lons[mask], lats[mask]
+        wind_speed, wind_dir = wind_speed[mask], wind_dir[mask]
+        wind_dir_rad = np.radians(wind_dir)
+        u_wind = -wind_speed * np.sin(wind_dir_rad)
+        v_wind = -wind_speed * np.cos(wind_dir_rad)
+
+        print(f"  Loaded {len(lons):,} valid wind vectors")
+        return {'lons': lons, 'lats': lats, 'u_wind': u_wind, 'v_wind': v_wind, 'wind_speed': wind_speed, 'total_vectors': len(lons)}
+    except Exception as e:
+        print(f"  Error reading ASCAT: {e}")
+        return None
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MTSAT FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+MTSAT_FTP_HOST = "mtsat.cr.chiba-u.ac.jp"
+MTSAT_FTP_PATH = "/pub"
+MTSAT_OPTIONS = {
+    "24": {"name": "MTSAT-1R", "satellite": "mtsat-1r", "reader": "jami_hrit", "ftp_dir": "MTSAT-1R/HRIT", "file_prefix": "HRIT_MTSAT1"},
+    "25": {"name": "MTSAT-2", "satellite": "mtsat-2", "reader": "mtsat2-imager_hrit", "ftp_dir": "MTSAT-2/HRIT", "file_prefix": "HRIT_MTSAT2"},
+}
+
+def find_mtsat_data_for_time(target_dt, mtype, fpref):
+    ftp = ftplib.FTP(MTSAT_FTP_HOST)
+    ftp.login()
+    all_times = []
+    for off in [-1, 0, 1]:
+        check = target_dt + datetime.timedelta(days=off)
+        y, m, d = check.year, check.month, check.day
+        try:
+            ftp.cwd(f"{MTSAT_FTP_PATH}/{mtype}/{y}{m:02d}/{d:02d}")
+            for f in ftp.nlst():
+                if f.endswith('.tar') and fpref in f:
+                    match = re.search(r'_(\d{12})\.tar$', f)
+                    if match:
+                        all_times.append((datetime.datetime.strptime(match.group(1), '%Y%m%d%H%M'), f))
+        except:
+            continue
+    ftp.quit()
+    if not all_times:
+        return None, None
+    return min(all_times, key=lambda x: abs((x[0] - target_dt).total_seconds()))
+
+def download_and_extract_mtsat(tar_file, mtype, outdir):
+    ftp = ftplib.FTP(MTSAT_FTP_HOST)
+    ftp.login()
+    match = re.search(r'_(\d{4})(\d{2})(\d{2})\d{4}\.tar$', tar_file)
+    if not match:
+        ftp.quit()
+        return None
+    y, mo, d = match.groups()
+    loc_tar = os.path.join(outdir, tar_file)
+    try:
+        ftp.cwd(f"{MTSAT_FTP_PATH}/{mtype}/{y}{mo}/{d}")
+        with open(loc_tar, 'wb') as f:
+            ftp.retrbinary(f'RETR {tar_file}', f.write)
+        ftp.quit()
+        with tarfile.open(loc_tar, 'r') as tar:
+            tar.extractall(outdir)
+        os.remove(loc_tar)
+        raw_files = []
+        for root, dirs, files in os.walk(outdir):
+            for f in files:
+                if f.endswith('.gz'):
+                    gz_path = os.path.join(root, f)
+                    out_path = gz_path[:-3]
+                    with gzip.open(gz_path, 'rb') as gi, open(out_path, 'wb') as fo:
+                        fo.write(gi.read())
+                    raw_files.append(out_path)
+                    os.remove(gz_path)
+                elif not f.endswith('.tar'):
+                    raw_files.append(os.path.join(root, f))
+        return raw_files or None
+    except Exception as e:
+        print(f"  MTSAT error: {e}")
+        ftp.quit()
+        return None
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GMS FUNCTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+GMS_FTP_HOST = "gms.cr.chiba-u.ac.jp"
+GMS_OPTIONS = {
+    "29": {"name": "GMS1", "satellite": "GMS1", "is_gms5": False, "error_corr": 4.3},
+    "30": {"name": "GMS2", "satellite": "GMS2", "is_gms5": False, "error_corr": 3.5},
+    "31": {"name": "GMS3", "satellite": "GMS3", "is_gms5": False, "error_corr": 4.75},
+    "32": {"name": "GMS4", "satellite": "GMS4", "is_gms5": False, "error_corr": 3.5},
+    "33": {"name": "GMS5", "satellite": "GMS5", "is_gms5": True, "error_corr": 0},
+}
+
+def find_gms_data_for_time(sat_choice, target_dt):
+    cfg = GMS_OPTIONS[sat_choice]
+    ftp = ftplib.FTP(GMS_FTP_HOST)
+    ftp.login()
+    all_slots = []
+    for dm in [-1, 0, 1]:
+        sd = target_dt + datetime.timedelta(days=30 * dm)
+        mp = f"{sd.month:02d}"
+        try:
+            if not cfg["is_gms5"]:
+                ftp.cwd(f"/pub/{cfg['satellite'].upper()}/gridded/{sd.year}{mp}")
+                pat = re.compile(r'^IR(\d{2})(\d{2})(\d{2})\.Z(\d{2})\.tar\.bz2$')
+                for f in ftp.nlst():
+                    m = pat.match(f.strip())
+                    if m:
+                        yy, mm, dd, hh = m.groups()
+                        yr = int(f"19{yy}") if int(yy) > 80 else int(f"20{yy}")
+                        all_slots.append((datetime.datetime(yr, int(mm), int(dd), int(hh)), f))
+            else:
+                ftp.cwd(f"/pub/GMS5/RVISSR/{sd.year}{mp}")
+                pat = re.compile(r'^(\d{4})(\d{2})(\d{2})(\d{2})00\.tar\.gz$')
+                for f in ftp.nlst():
+                    m = pat.match(f.strip())
+                    if m:
+                        y, mo, d, h = m.groups()
+                        all_slots.append((datetime.datetime(int(y), int(mo), int(d), int(h)), f))
+        except:
+            continue
+    ftp.quit()
+    if not all_slots:
+        return None, None
+    return min(all_slots, key=lambda x: abs((x[0] - target_dt).total_seconds()))
+
+def download_gms_file(sat_choice, year, month, day, hour, remote_filename):
+    cfg = GMS_OPTIONS[sat_choice]
+    mp, dp, hp = f"{month:02d}", f"{day:02d}", f"{hour:02d}"
+    ftp_dir = f"/pub/{cfg['satellite'].upper()}/gridded/{year}{mp}" if not cfg["is_gms5"] else f"/pub/GMS5/RVISSR/{year}{mp}"
+    ftp = ftplib.FTP(GMS_FTP_HOST)
+    ftp.login()
+    try:
+        ftp.cwd(ftp_dir)
+        with open(remote_filename, 'wb') as f:
+            ftp.retrbinary(f'RETR {remote_filename}', f.write)
+        ftp.quit()
+        if not cfg["is_gms5"]:
+            with tarfile.open(remote_filename, 'r:bz2') as tar:
+                tar.extractall()
+            os.remove(remote_filename)
+            geoss = glob.glob(f'/content/IR{str(year)[-2:]}{mp}{dp}.Z{hp}.geoss') or glob.glob('/content/*.geoss')
+            return geoss or None
+        else:
+            with tarfile.open(remote_filename, 'r:gz') as tar:
+                tar.extractall()
+            os.remove(remote_filename)
+            csv_files = glob.glob('/content/ir1_tbl*.csv')
+            raw_files = glob.glob('/content/ir1_count*.raw')
+            return [csv_files[0], raw_files[0]] if csv_files and raw_files else None
+    except Exception as e:
+        print(f"  GMS error: {e}")
+        ftp.quit()
+        if os.path.exists(remote_filename):
+            os.remove(remote_filename)
+        return None
+
+def process_gms_data(sat_choice, files, lat, lon, zoom):
+    cfg = GMS_OPTIONS[sat_choice]
+    if not cfg["is_gms5"]:
+        data = np.fromfile(files[0], dtype=np.float32).reshape((3000, 3000)) + cfg["error_corr"] - 273.15
+        lats = np.linspace(60, -60, 3000)
+        lons = np.linspace(80, 200, 3000)
+    else:
+        import pandas as pd
+        table = pd.read_csv(files[0])
+        raw = np.frombuffer(open(files[1], 'rb').read(), dtype=np.uint8).reshape((2400, 2400))
+        cmap = table.set_index(table.columns[0])[table.columns[1]]
+        data = np.vectorize(cmap.get)(raw).astype(np.float32) - 273.15
+        lats = np.linspace(60, -60, 2400)
+        lons = np.linspace(80, 200, 2400)
+    li = np.abs(lats - lat).argmin()
+    loi = np.abs(lons - lon).argmin()
+    rl = int(zoom / np.abs(lats[1] - lats[0]))
+    ro = int(zoom / np.abs(lons[1] - lons[0]))
+    ml, xl = max(0, li - rl), min(len(lats), li + rl + 1)
+    mo, xo = max(0, loi - ro), min(len(lons), loi + ro + 1)
+    crop = data[ml:xl, mo:xo]
+    extent = (lons[mo], lats[xl - 1], lons[xo - 1], lats[ml])
+    return crop, extent
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# S3 FUNCTIONS (Himawari/GOES)
+# ═══════════════════════════════════════════════════════════════════════════════
+def find_himawari_files(fs, sat, prod_path, dt, band_fmt, is_tc):
+    band_str = band_fmt[1:] if not is_tc else None
+    pat = re.compile(r'_B0[1-4]_') if is_tc else re.compile(rf'_B{band_str}_')
+    
+    def try_slot(slot):
+        hm = f"{slot.hour:02d}{slot.minute:02d}"
+        path = f"{sat}/{prod_path}{slot.year}/{slot.month:02d}/{slot.day:02d}/{hm}/"
+        try:
+            matched = [f for f in fs.ls(path) if pat.search(f.split('/')[-1]) and f.endswith(('.bz2', '.nc', '.h5'))]
+            return matched or None
+        except:
+            return None
+    
+    found = try_slot(dt)
+    if found:
+        return found
+    for off in [10, -10, 20, -20, 30, -30]:
+        found = try_slot(dt + datetime.timedelta(minutes=off))
+        if found:
+            return found
+    return None
+
+def find_goes_file(fs, sat, dt, band_fmt, is_tc):
+    jday = dt.strftime('%j')
+    path = f"{sat}/ABI-L1b-RadF/{dt.year}/{jday}/{dt.hour:02d}/"
+    try:
+        files = fs.ls(path)
+        band_num = int(band_fmt[1:]) if not is_tc else None
+        possible = []
+        for fp in files:
+            fn = fp.split('/')[-1]
+            s = re.search(r'_s(\d{13})', fn)
+            if s:
+                file_dt = datetime.datetime.strptime(s.group(1)[:11], '%Y%j%H%M')
+                if not is_tc and f'C{band_num:02d}' in fn:
+                    possible.append((file_dt, fp))
+                elif is_tc and 'M3C' in fn:
+                    possible.append((file_dt, fp))
+        if possible:
+            return min(possible, key=lambda x: abs((x[0] - dt).total_seconds()))[1]
+    except:
+        pass
+    return None
+
+def download_himawari_file(fs, s3_file, tmp_dir):
+    loc = os.path.join(tmp_dir, s3_file.split('/')[-1].replace('.bz2', ''))
+    for _ in range(3):
+        try:
+            if s3_file.endswith('.bz2'):
+                with fs.open(s3_file, 'rb') as f, open(loc, 'wb') as o:
+                    o.write(bz2.decompress(f.read()))
+            else:
+                fs.get(s3_file, loc)
+            return loc
+        except:
+            time.sleep(0.5)
+    return None
+
+def find_latest_satellite_data(fs, satellite_name, product_path="AHI-L1b-FLDK/", target_dt=None):
+    for attempt in range(3):
+        try:
+            fs.invalidate_cache()
+            base = f"{satellite_name}/ABI-L1b-RadF/" if "goes" in satellite_name else f"{satellite_name}/{product_path}"
+            if target_dt:
+                if "goes" in satellite_name:
+                    all_dts = []
+                    for h in range(-2, 3):
+                        sd = target_dt + datetime.timedelta(hours=h)
+                        jd = sd.strftime('%j')
+                        try:
+                            for fp in fs.ls(f"{base}{sd.year}/{jd}/{sd.hour:02d}/"):
+                                s = re.search(r'_s(\d{13})', fp.split('/')[-1])
+                                if s:
+                                    try:
+                                        all_dts.append(datetime.datetime.strptime(s.group(1)[:11], '%Y%j%H%M'))
+                                    except:
+                                        pass
+                        except:
+                            continue
+                    if not all_dts:
+                        return None, None
+                    closest = min(all_dts, key=lambda x: abs((x - target_dt).total_seconds()))
+                    return closest, closest.strftime("%Y-%m-%d %H:%M")
+                else:
+                    times = sorted([i.split('/')[-1] for i in fs.ls(f"{base}{target_dt.year}/{target_dt.month:02d}/{target_dt.day:02d}/") if i.split('/')[-1].isdigit()])
+                    if not times:
+                        return None, None
+                    closest = min(times, key=lambda x: abs(int(x) - int(f"{target_dt.hour:02d}{target_dt.minute:02d}")))
+                    dstr = f"{target_dt.year}-{target_dt.month:02d}-{target_dt.day:02d} {closest[:2]}:{closest[2:]}"
+                    return datetime.datetime.strptime(dstr, "%Y-%m-%d %H:%M"), dstr
+            else:
+                y = sorted([i.split('/')[-1] for i in fs.ls(base) if i.split('/')[-1].isdigit()])[-1]
+                mj = sorted([i.split('/')[-1] for i in fs.ls(f"{base}{y}/") if i.split('/')[-1].isdigit()])[-1]
+                dh = sorted([i.split('/')[-1] for i in fs.ls(f"{base}{y}/{mj}/") if i.split('/')[-1].isdigit()])[-1]
+                if "goes" in satellite_name:
+                    dt = datetime.datetime.strptime(f"{y} {mj} {dh}", "%Y %j %H")
+                    return dt, dt.strftime("%Y-%m-%d %H:%M")
+                else:
+                    t = sorted([i.split('/')[-1] for i in fs.ls(f"{base}{y}/{mj}/{dh}/") if i.split('/')[-1].isdigit()])[-1]
+                    dstr = f"{y}-{mj}-{dh} {t[:2]}:{t[2:]}"
+                    return datetime.datetime.strptime(dstr, "%Y-%m-%d %H:%M"), dstr
+        except:
+            if attempt == 2:
+                return None, None
+            time.sleep(1)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIIRS FUNCTIONS - FIXED with explicit netrc-file
+# ═══════════════════════════════════════════════════════════════════════════════
+VIIRS_CONFIG = {
+    "npp": {"data_url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/5200/VNP02IMG/",
+            "geo_url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/5200/VNP03IMG/",
+            "name": "NPP", "data_prefix": "VNP02IMG", "geo_prefix": "VNP03IMG"},
+    "noaa20": {"data_url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/5201/VJ102IMG/",
+               "geo_url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/5201/VJ103IMG/",
+               "name": "NOAA-20", "data_prefix": "VJ102IMG", "geo_prefix": "VJ103IMG"},
+    "noaa21": {"data_url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/5201/VJ202IMG/",
+               "geo_url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/5201/VJ203IMG/",
+               "name": "NOAA-21", "data_prefix": "VJ202IMG", "geo_prefix": "VJ203IMG"}
+}
+
+VIIRS_BANDS = {
+    'I01': {'name': 'Visible Red (0.64 µm)', 'thermal': False},
+    'I02': {'name': 'Near-IR (0.86 µm)', 'thermal': False},
+    'I03': {'name': 'Shortwave IR (1.61 µm)', 'thermal': False},
+    'I04': {'name': 'Thermal IR (3.74 µm)', 'thermal': True},
+    'I05': {'name': 'Thermal IR (11.45 µm)', 'thermal': True}
+}
+
+# FIXED: download_with_wget using explicit netrc-file
+def download_with_wget(url, save_dir, token):
+    """Download using Python requests with Bearer token authentication"""
+    os.makedirs(save_dir, exist_ok=True)
+    filename = url.split('/')[-1]
+    save_path = os.path.join(save_dir, filename)
+    
+    if os.path.exists(save_path) and os.path.getsize(save_path) > 100000:
+        print(f"  Already exists: {filename[:60]}... ({os.path.getsize(save_path)/1024/1024:.2f} MB)")
+        return save_path
+    
+    print(f"  Downloading: {filename[:60]}...")
+    
+    try:
+        headers = {'Authorization': f'Bearer {token}'}
+        response = requests.get(url, headers=headers, stream=True, timeout=120)
+        
+        if response.status_code == 200:
+            # Check content type - if it's HTML, authentication failed
+            content_type = response.headers.get('Content-Type', '')
+            if 'text/html' in content_type:
+                print(f"  ⚠ Got HTML page - authentication failed!")
+                return None
+            
+            # Download the file
+            with open(save_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            
+            file_size = os.path.getsize(save_path)
+            if file_size > 100000:
+                print(f"  Downloaded {file_size/1024/1024:.2f} MB")
+                return save_path
+            else:
+                print(f"  File too small ({file_size} bytes)")
+                os.remove(save_path)
+                return None
+        elif response.status_code == 401:
+            print(f"  ⚠ Authentication failed (401 Unauthorized)")
+            return None
+        else:
+            print(f"  ⚠ HTTP {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print(f"  Download error: {e}")
+        return None
+
+def list_viirs_files_for_day(sat_key, year, day):
+    cfg = VIIRS_CONFIG.get(sat_key.lower())
+    if not cfg: 
+        return []
+    headers = {'Authorization': f'Bearer {NASA_EDL_TOKEN}'}
+    day_str = f"{day:03d}"
+    data_url = f"{cfg['data_url']}{year}/{day_str}/"
+    files_list = []
+    try:
+        resp = requests.get(data_url, headers=headers, timeout=60)
+        if resp.status_code == 200:
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            for link in soup.find_all('a'):
+                href = link.get('href', '')
+                if href.endswith('.nc') and cfg['data_prefix'] in href:
+                    match = re.search(r'A(\d{4})(\d{3})\.(\d{4})', href)
+                    if match:
+                        y, doy, hhmm = match.groups()
+                        dt = datetime.datetime(int(y), 1, 1) + datetime.timedelta(days=int(doy)-1)
+                        dt = dt.replace(hour=int(hhmm[:2]), minute=int(hhmm[2:]))
+                        files_list.append((dt, data_url + href))
+    except:
+        pass
+    return files_list
+
+def find_viirs_data_for_time(sat_key, target_dt):
+    cfg = VIIRS_CONFIG.get(sat_key.lower())
+    if not cfg: 
+        return None, None, None
+    print(f"  Searching VIIRS near {target_dt.strftime('%Y-%m-%d %H:%M UTC')}...")
+    all_files = []
+    for offset in range(-1, 2):
+        check_dt = target_dt + datetime.timedelta(days=offset)
+        doy = check_dt.timetuple().tm_yday
+        year = check_dt.year
+        files = list_viirs_files_for_day(sat_key, year, doy)
+        all_files.extend(files)
+    if not all_files:
+        print(f"  No VIIRS files found")
+        return None, None, None
+    closest = min(all_files, key=lambda x: abs((x[0] - target_dt).total_seconds()))
+    data_dt, data_url = closest
+    print(f"  Closest VIIRS: {data_dt.strftime('%Y-%m-%d %H:%M UTC')}")
+    
+    # Find geo file
+    geo_url = None
+    match = re.search(r'A\d{7}\.(\d{4})', data_url.split('/')[-1])
+    if match:
+        timestamp = match.group(1)
+        doy = data_dt.timetuple().tm_yday
+        year = data_dt.year
+        geo_dir = f"{cfg['geo_url']}{year}/{doy:03d}/"
+        headers = {'Authorization': f'Bearer {NASA_EDL_TOKEN}'}
+        try:
+            resp = requests.get(geo_dir, headers=headers, timeout=60)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                for link in soup.find_all('a'):
+                    href = link.get('href', '')
+                    if timestamp in href and href.endswith('.nc'):
+                        geo_url = geo_dir + href
+                        break
+        except:
+            pass
+    return data_dt, data_url, geo_url
+
+def load_viirs_geolocation(geo_path, subsample=2):
+    if not geo_path or not os.path.exists(geo_path):
+        return None, None
+    try:
+        with h5py.File(geo_path, 'r') as f:
+            lat = lon = None
+            def find_coords(name, obj):
+                nonlocal lat, lon
+                if isinstance(obj, h5py.Dataset) and len(obj.shape) == 2:
+                    name_lower = name.lower()
+                    if 'latitude' in name_lower and lat is None:
+                        lat = obj[()]
+                    elif 'longitude' in name_lower and lon is None:
+                        lon = obj[()]
+            f.visititems(find_coords)
+            if lat is not None and lon is not None:
+                if subsample > 1:
+                    lat = lat[::subsample, ::subsample]
+                    lon = lon[::subsample, ::subsample]
+                return lat.astype(np.float64), lon.astype(np.float64)
+    except:
+        pass
+    return None, None
+
+def extract_viirs_band(data_path, band_name, subsample=2):
+    try:
+        with h5py.File(data_path, 'r') as f:
+            band_data = None
+            dset_attrs = {}
+            def find_band(name, obj):
+                nonlocal band_data, dset_attrs
+                if isinstance(obj, h5py.Dataset) and obj.name.split('/')[-1] == band_name:
+                    band_data = obj[()]
+                    for key in obj.attrs:
+                        dset_attrs[key] = obj.attrs[key]
+            f.visititems(find_band)
+            if band_data is None:
+                return None, None, None
+            if subsample > 1:
+                band_data = band_data[::subsample, ::subsample]
+            band_data = band_data.astype(np.float64)
+            scale = float(dset_attrs.get('scale_factor', 1.0))
+            offset = float(dset_attrs.get('add_offset', 0.0))
+            band_data = band_data * scale + offset
+            fill_mask = np.isnan(band_data) | np.isinf(band_data) | (band_data < -900) | (band_data > 1e5)
+            is_thermal = VIIRS_BANDS[band_name]['thermal']
+            if is_thermal:
+                valid = band_data[~fill_mask]
+                if valid.size > 0:
+                    wavelength = 3.74e-6 if band_name == 'I04' else 11.45e-6
+                    h, c, k = 6.62607015e-34, 2.99792458e8, 1.380649e-23
+                    spectral_radiance = np.maximum(band_data, 1e-10) * 1e6
+                    band_data = (h * c) / (k * wavelength) / np.log(2 * h * c**2 / (wavelength**5 * spectral_radiance) + 1) - 273.15
+            else:
+                valid = band_data[~fill_mask]
+                if valid.size > 0 and np.max(valid) > 1.5:
+                    band_data = band_data / 100.0
+            band_data[fill_mask] = np.nan
+            return band_data, fill_mask, is_thermal
+    except:
+        return None, None, None
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EUMETSAT / METEOSAT FUNCTIONS (SIMPLIFIED)
+# ═══════════════════════════════════════════════════════════════════════════════
+SEVIRI_CHANNELS = {
+    1: ('VIS006', False), 2: ('VIS008', False), 3: ('NIR016', False),
+    4: ('IR_039', True), 5: ('WV_062', True), 6: ('WV_073', True),
+    7: ('IR_087', True), 8: ('IR_097', True), 9: ('IR_108', True),
+    10: ('IR_120', True), 11: ('IR_134', True), 12: ('HRV', False)
+}
+AVHRR_CHANNELS = {1: ('1', False), 2: ('2', False), 3: ('3a', False), 4: ('4', True), 5: ('5', True)}
+
+def find_eumetsat_product(collection, target_dt):
+    start = (target_dt - datetime.timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S")
+    end = (target_dt + datetime.timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        cmd = ["eumdac", "search", "--collection", collection, "--start", start, "--end", end, "--limit", "50"]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, check=False)
+        if result.returncode != 0:
+            return None
+        for line in result.stdout.strip().split('\n'):
+            line = line.strip()
+            if not line or line.startswith(('total', 'Collection', '---', '====')):
+                continue
+            parts = line.split()
+            if parts:
+                return parts[0]
+    except:
+        pass
+    return None
+
+def download_eumetsat(collection, product, out_dir):
+    os.makedirs(out_dir, exist_ok=True)
+    try:
+        cmd = ["eumdac", "download", "--collection", collection, "--product", product, "--output", out_dir]
+        subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=False)
+        all_files = []
+        for root, dirs, files in os.walk(out_dir):
+            for f in files:
+                all_files.append(os.path.join(root, f))
+        if not all_files:
+            return None
+        zip_files = [f for f in all_files if f.lower().endswith('.zip')]
+        if zip_files:
+            with zipfile.ZipFile(zip_files[0], 'r') as zf:
+                zf.extractall(out_dir)
+            os.remove(zip_files[0])
+            all_files = []
+            for root, dirs, files in os.walk(out_dir):
+                for f in files:
+                    all_files.append(os.path.join(root, f))
+        return all_files
+    except:
+        return None
+
+def resample_frame_data(local_files, reader, band_num, is_true_color, extent, image_size_tuple, is_mtsat):
+    scn = Scene(filenames=local_files, reader=reader)
+    if is_mtsat:
+        band_map = {1: 'VIS', 2: 'VIS', 3: 'WV', 4: 'IR1', 5: 'IR2'}
+        band_name = band_map.get(band_num, 'IR1')
+        scn.load([band_name])
+        ta = AreaDefinition('crop', 'UserCrop', 'latlong', {'proj': 'latlong'}, 
+                           image_size_tuple[0], image_size_tuple[1], extent)
+        ls = scn.resample(ta)
+        v = ls[band_name].values
+        if band_num >= 3 and np.nanmax(v) > 200:
+            v -= 273.15
+        return v, band_name, ls, True
+    else:
+        if is_true_color:
+            scn.load(['true_color'], generate=False)
+            band_name = 'true_color'
+            is_thermal = False
+        elif 'seviri' in reader:
+            band_name, is_thermal = SEVIRI_CHANNELS[band_num]
+        elif 'avhrr' in reader:
+            band_name, is_thermal = AVHRR_CHANNELS[band_num]
+        elif 'abi' in reader:
+            band_name = f'C{band_num:02d}'
+            is_thermal = band_num >= 7
+        else:
+            band_name = f'B{band_num:02d}'
+            is_thermal = band_num >= 7
+        if not is_true_color:
+            calib = 'brightness_temperature' if is_thermal else 'reflectance'
+            scn.load([band_name], calibration=calib, generate=False)
+        if not scn or (band_name not in scn and not is_true_color):
+            return None, None, None, False
+        ta = AreaDefinition('crop', 'UserCrop', 'latlong', {'proj': 'latlong'},
+                           image_size_tuple[0], image_size_tuple[1], extent)
+        ls = scn.resample(ta)
+        if not ls or band_name not in ls:
+            return None, None, None, False
+        v = ls[band_name].values
+        if np.all(np.isnan(v)):
+            return None, None, None, False
+        if is_thermal and not is_true_color and np.nanmax(v) > 100:
+            v -= 273.15
+        return v, (None if is_true_color else band_name), ls, is_thermal
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ACTIVE STORMS (Knack API)
+# ═══════════════════════════════════════════════════════════════════════════════
+def _fetch_all_storms():
+    try:
+        return requests.get("https://api.knackwx.com/atcf/v2", timeout=10).json()
+    except:
+        return []
+
+def _parse_storm_time(s):
+    try:
+        return datetime.datetime.strptime(s['analysis_time'], "%Y-%m-%dT%H:%M:%S.%fZ")
+    except:
+        return datetime.datetime.strptime(s['analysis_time'], "%Y-%m-%dT%H:%M:%SZ")
+
+def list_active_storms():
+    all_storms = _fetch_all_storms()
+    if not all_storms:
+        return []
+    latest = {}
+    for s in all_storms:
+        key = s.get('atcf_id', s.get('storm_name', '')).lower()
+        if key not in latest or _parse_storm_time(s) > _parse_storm_time(latest[key]):
+            latest[key] = s
+    return sorted(latest.values(), key=lambda s: (s.get('atcf_id', '')[:2], s.get('storm_name', '')))
+
+def print_storm_list(storms):
+    if not storms:
+        print("  No active storms found.")
+        return
+    print(f"\n  {'#':<4} {'Storm':<35} {'Wind':>6} {'Pres':>6}  {'Lat':>7} {'Lon':>8}  {'ATCF ID'}")
+    print("  " + "─" * 75)
+    for i, s in enumerate(storms, 1):
+        display_name, cat_full = get_storm_display_name(s, 'knack')
+        winds = s.get('winds', '?')
+        pres = s.get('pressure', '?')
+        lat = s.get('latitude', '?')
+        lon = s.get('longitude', '?')
+        atcf = s.get('atcf_id', '?')
+        ls = f"{lat:.1f}N" if isinstance(lat, (int, float)) and lat >= 0 else f"{abs(lat):.1f}S"
+        lo = f"{lon:.1f}E" if isinstance(lon, (int, float)) and lon >= 0 else f"{abs(lon):.1f}W"
+        if display_name.lower() == cat_full.lower() or cat_full.lower() in display_name.lower():
+            full_name = display_name
+        else:
+            full_name = f"{cat_full} {display_name}"
+        print(f"  {i:<4} {full_name:<35} {winds:>5}kt {pres:>5}hPa  {ls:>7} {lo:>8}  {atcf}")
+
+def get_storm_data(atcf_id, target_time=None):
+    all_storms = _fetch_all_storms()
+    if not all_storms:
+        return None
+    matching = [s for s in all_storms if atcf_id.lower() in s.get('atcf_id', '').lower() or atcf_id.lower() in s.get('storm_name', '').lower()]
+    if not matching:
+        return None
+    if target_time:
+        return min(matching, key=lambda s: abs((_parse_storm_time(s) - target_time).total_seconds()))
+    return max(matching, key=_parse_storm_time)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SOLAR ZENITH
+# ═══════════════════════════════════════════════════════════════════════════════
+def calculate_solar_zenith(lat, lon, dt):
+    doy = dt.timetuple().tm_yday
+    decl = math.radians(23.45 * math.sin(math.radians(360 / 365 * (doy - 81))))
+    ha = math.radians((dt.hour + dt.minute / 60 - 12) * 15 + lon)
+    lr = math.radians(lat)
+    cz = max(-1, min(1, math.sin(lr) * math.sin(decl) + math.cos(lr) * math.cos(decl) * math.cos(ha)))
+    return math.degrees(math.acos(cz))
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SINGLE-FRAME FETCH
+# ═══════════════════════════════════════════════════════════════════════════════
+def fetch_one_frame(sat_config, target_dt, band_fmt, band_num, is_tc,
+                    extent, final_image_size, lat, lon, crop_deg, viirs_band=None):
+    satellite = sat_config['satellite']
+    reader = sat_config['reader']
+    is_eumetsat = sat_config['is_eumetsat']
+    is_viirs = sat_config['is_viirs']
+    is_gms = sat_config['is_gms']
+    is_mtsat = sat_config['is_mtsat']
+    him_prod = sat_config.get('him_prod')
+    collection = sat_config.get('collection')
+    sat_choice = sat_config.get('sat_choice')
+
+    if is_viirs:
+        print(f"\n  Fetching VIIRS data ({VIIRS_CONFIG[sat_config['viirs_sat_key']]['name']})...")
+        actual_dt, data_url, geo_url = find_viirs_data_for_time(sat_config['viirs_sat_key'], target_dt)
+        if not actual_dt or not data_url:
+            print("  No VIIRS data found.")
+            return None, None, None, None, None, None
+        download_dir = f"./viirs_data/{VIIRS_CONFIG[sat_config['viirs_sat_key']]['name']}/{actual_dt.year}/day{actual_dt.timetuple().tm_yday:03d}"
+        data_path = download_with_wget(data_url, download_dir, NASA_EDL_TOKEN)
+        geo_path = download_with_wget(geo_url, download_dir, NASA_EDL_TOKEN) if geo_url else None
+        if not data_path:
+            print("  VIIRS download failed.")
+            return None, None, None, None, None, None
+        lats, lons = load_viirs_geolocation(geo_path, subsample=2)
+        val_data, _, _ = extract_viirs_band(data_path, viirs_band, subsample=2)
+        if val_data is None:
+            print("  VIIRS band extraction failed.")
+            return None, None, None, None, None, None
+        return val_data, None, None, actual_dt, lats, lons
+
+    if is_eumetsat:
+        if not collection:
+            return None, None, None, target_dt, None, None
+        product = find_eumetsat_product(collection, target_dt)
+        if not product:
+            return None, None, None, target_dt, None, None
+        out_dir = os.path.join(DISK_CACHE_DIR, f"eum_{target_dt.strftime('%Y%m%d%H%M%S')}_{os.getpid()}")
+        os.makedirs(out_dir, exist_ok=True)
+        local_files = download_eumetsat(collection, product, out_dir)
+        if not local_files:
+            shutil.rmtree(out_dir, ignore_errors=True)
+            return None, None, None, target_dt, None, None
+        vd, bk, ls, _ = resample_frame_data(local_files, reader, band_num, is_tc, extent, final_image_size, False)
+        shutil.rmtree(out_dir, ignore_errors=True)
+        return vd, ls, bk, target_dt, None, None
+
+    if is_gms:
+        closest_dt, remote_file = find_gms_data_for_time(sat_choice, target_dt)
+        if not closest_dt:
+            return None, None, None, target_dt, None, None
+        y, m, d, h = closest_dt.year, closest_dt.month, closest_dt.day, closest_dt.hour
+        gms_files = download_gms_file(sat_choice, y, m, d, h, remote_file)
+        if not gms_files:
+            return None, None, None, target_dt, None, None
+        vd, ext = process_gms_data(sat_choice, gms_files, lat, lon, crop_deg)
+        for f in gms_files:
+            try:
+                os.remove(f)
+            except:
+                pass
+        return vd, None, None, closest_dt, None, None
+
+    if is_mtsat:
+        closest = find_mtsat_data_for_time(target_dt, MTSAT_OPTIONS[sat_choice]["ftp_dir"],
+                                           MTSAT_OPTIONS[sat_choice]["file_prefix"])
+        if not closest:
+            return None, None, None, target_dt, None, None
+        actual_dt, tar_file = closest
+        tmp_dir = os.path.join(DISK_CACHE_DIR, f"mtsat_{target_dt.strftime('%Y%m%d%H%M%S')}_{os.getpid()}")
+        os.makedirs(tmp_dir, exist_ok=True)
+        local_files = download_and_extract_mtsat(tar_file, MTSAT_OPTIONS[sat_choice]["ftp_dir"], tmp_dir)
+        if not local_files:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            return None, None, None, target_dt, None, None
+        vd, bk, ls, _ = resample_frame_data(local_files, reader, band_num, is_tc, extent, final_image_size, True)
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        return vd, ls, bk, actual_dt, None, None
+
+    # GOES / Himawari
+    fs = s3fs.S3FileSystem(anon=True)
+    found_dt, _ = find_latest_satellite_data(fs, satellite, him_prod, target_dt)
+    actual_dt = found_dt or target_dt
+    if "goes" in satellite:
+        s3_file = find_goes_file(fs, satellite, actual_dt, band_fmt, is_tc)
+        if not s3_file:
+            return None, None, None, actual_dt, None, None
+        all_s3 = [s3_file]
+    else:
+        all_s3 = find_himawari_files(fs, satellite, him_prod, actual_dt, band_fmt, is_tc)
+        if not all_s3:
+            return None, None, None, actual_dt, None, None
+    tmp_dir = os.path.join(DISK_CACHE_DIR, f"sat_{actual_dt.strftime('%Y%m%d%H%M%S')}_{os.getpid()}")
+    os.makedirs(tmp_dir, exist_ok=True)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=FETCH_THREADS) as ex:
+        local_files = [f for f in ex.map(lambda f: download_himawari_file(fs, f, tmp_dir), all_s3) if f]
+    if not local_files:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        return None, None, None, actual_dt, None, None
+    _reader = 'abi_l1b' if 'goes' in satellite else 'ahi_hsd'
+    vd, bk, ls, _ = resample_frame_data(local_files, _reader, band_num, is_tc, extent, final_image_size, False)
+    shutil.rmtree(tmp_dir, ignore_errors=True)
+    return vd, ls, bk, actual_dt, None, None
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SATELLITE SELECTION MENU (SIMPLIFIED METEOSAT)
+# ═══════════════════════════════════════════════════════════════════════════════
+SATELLITE_GROUPS = {
+    "GOES": {
+        "Full-Disk": [("16", "GOES-16 Full-Disk", "noaa-goes16"), ("17", "GOES-17 Full-Disk", "noaa-goes17"),
+                      ("18", "GOES-18 Full-Disk", "noaa-goes18"), ("19", "GOES-19 Full-Disk", "noaa-goes19")],
+        "Meso": [("16 M1", "GOES-16 Meso-1", "noaa-goes16"), ("16 M2", "GOES-16 Meso-2", "noaa-goes16"),
+                 ("17 M1", "GOES-17 Meso-1", "noaa-goes17"), ("17 M2", "GOES-17 Meso-2", "noaa-goes17"),
+                 ("18 M1", "GOES-18 Meso-1", "noaa-goes18"), ("18 M2", "GOES-18 Meso-2", "noaa-goes18"),
+                 ("19 M1", "GOES-19 Meso-1", "noaa-goes19"), ("19 M2", "GOES-19 Meso-2", "noaa-goes19")],
+        "US Atlantic": [("16", "US Atlantic GOES-16", "noaa-goes16"), ("17", "US Atlantic GOES-17", "noaa-goes17"),
+                        ("18", "US Atlantic GOES-18", "noaa-goes18"), ("19", "US Atlantic GOES-19", "noaa-goes19")],
+    },
+    "Himawari": {
+        "Full-Disk": [("9", "Himawari-9 Full-Disk", "noaa-himawari9"), ("8", "Himawari-8 Full-Disk", "noaa-himawari8")],
+        "West Pacific": [("9", "W Pacific Himawari-9", "noaa-himawari9"), ("8", "W Pacific Himawari-8", "noaa-himawari8")],
+        "Target Area": [("9", "Himawari-9 Target", "noaa-himawari9"), ("8", "Himawari-8 Target", "noaa-himawari8")],
+    },
+    "Meteosat": {
+        "IODC (45.5°E)": [("11", "Meteosat-11 IODC", "Meteosat-11", "seviri_l1b_native", "EO:EUM:DAT:MSG:HRSEVIRI-IODC"),
+                          ("12", "Meteosat-12 IODC", "Meteosat-12", "seviri_l1b_native", "EO:EUM:DAT:MSG:HRSEVIRI-IODC"),
+                          ("9", "Meteosat-9 IODC", "Meteosat-9", "seviri_l1b_native", "EO:EUM:DAT:MSG:HRSEVIRI-IODC")],
+        "Rapid Scan": [("9", "Meteosat-9 RSS", "Meteosat-9", "seviri_l1b_native", "EO:EUM:DAT:MSG:HRSEVIRI"),
+                       ("10", "Meteosat-10 RSS", "Meteosat-10", "seviri_l1b_native", "EO:EUM:DAT:MSG:HRSEVIRI")],
+    },
+    "AVHRR": {
+        "Metop-A": [("Metop-A", "Metop-A AVHRR Global", "Metop-A", "avhrr_l1b_eps", "EO:EUM:DAT:METOP:AVHRRL1")],
+        "Metop-B": [("Metop-B", "Metop-B AVHRR Global", "Metop-B", "avhrr_l1b_eps", "EO:EUM:DAT:METOP:AVHRRL1")],
+        "Metop-C": [("Metop-C", "Metop-C AVHRR Global", "Metop-C", "avhrr_l1b_eps", "EO:EUM:DAT:METOP:AVHRRL1")],
+    },
+    "Historical": {
+        "MTSAT": [("1R", "MTSAT-1R", "mtsat-1r", "jami_hrit", "24"), ("2", "MTSAT-2", "mtsat-2", "mtsat2-imager_hrit", "25")],
+        "GMS": [("1", "GMS1", "GMS1", None, "29"), ("2", "GMS2", "GMS2", None, "30"),
+                ("3", "GMS3", "GMS3", None, "31"), ("4", "GMS4", "GMS4", None, "32"),
+                ("5", "GMS5", "GMS5", None, "33")],
+    },
+    "VIIRS": {
+        "All": [("NPP", "VIIRS NPP", "NPP", "viirs", "39"), ("NOAA-20", "VIIRS NOAA-20", "NOAA-20", "viirs", "40"),
+                ("NOAA-21", "VIIRS NOAA-21", "NOAA-21", "viirs", "41")],
+    },
+    "Special": {
+        "Philippines View": [("Fixed", "Philippines Fixed View", "noaa-himawari9", "ahi_hsd", "26")],
+        "Manual Coords": [("Custom", "Manual Coordinates", "noaa-himawari9", "ahi_hsd", "27")],
+        "Active Storms": [("Knack", "Active Storms (KnackWx)", "noaa-himawari9", "ahi_hsd", "28")],
+    }
+}
+
+def _input(prompt, default=""):
+    val = input(prompt).strip()
+    return val if val else default
+
+def _sep(title=""):
+    print("\n" + "=" * 55)
+    if title:
+        print(f"  {title}")
+    print("=" * 55)
+
+def choose_satellite_group():
+    _sep("SATELLITE SELECTION")
+    groups = list(SATELLITE_GROUPS.keys())
+    for i, g in enumerate(groups, 1):
+        print(f"  {i}: {g}")
+    print(f"  {len(groups) + 1}: ASCAT Wind Barbs on Satellite")
+    print("-" * 55)
+    sel = _input("  Select group (enter number): ")
+    if sel == str(len(groups) + 1):
+        return 'ASCAT'
+    try:
+        idx = int(sel) - 1
+        if 0 <= idx < len(groups):
+            return groups[idx]
+    except:
+        pass
+    print("  Defaulting to GOES.")
+    return 'GOES'
+
+def select_satellite(group):
+    if group == 'ASCAT':
+        return handle_ascat_selection()
+    cat = SATELLITE_GROUPS[group]
+    sub_keys = list(cat.keys())
+    if len(sub_keys) == 1:
+        sub = sub_keys[0]
+    else:
+        print(f"\n  {group} subcategories:")
+        for i, k in enumerate(sub_keys, 1):
+            print(f"    {i}: {k}")
+        sub_idx = _input("  Select (enter number): ")
+        try:
+            sub = sub_keys[int(sub_idx) - 1]
+        except:
+            print(f"  Invalid, using '{sub_keys[0]}'.")
+            sub = sub_keys[0]
+    options = cat[sub]
+    print(f"\n  {group} — {sub}")
+    print("  Available satellites:")
+    for i, opt in enumerate(options, 1):
+        desc = opt[1] if len(opt) > 1 else opt[0]
+        print(f"    {i}: {desc}")
+    sel = _input("  Select (enter number): ")
+    try:
+        idx = int(sel) - 1
+        chosen = options[idx]
+    except:
+        chosen = options[0]
+        print(f"  Using default: {chosen[1] if len(chosen) > 1 else chosen[0]}")
+    return _build_satellite_config(group, sub, chosen)
+
+def _build_satellite_config(group, sub, chosen):
+    config = {'satellite': None, 'reader': None, 'is_eumetsat': False, 'is_viirs': False,
+              'is_mtsat': False, 'is_gms': False, 'is_wp': False, 'is_us': False,
+              'is_us_h9': False, 'is_ph': False, 'is_mesoscale': False, 'is_target_area': False,
+              'meso_num': 1, 'him_prod': None, 'collection': None, 'sat_choice': None,
+              'viirs_sat_key': None, 'is_ascat': False, 'ascat_letter': None}
+    if group == "GOES":
+        config['satellite'] = chosen[2]
+        config['reader'] = 'abi_l1b'
+        config['is_mesoscale'] = (sub == 'Meso')
+        config['meso_num'] = 2 if 'M2' in chosen[0] else 1
+        config['is_us'] = (sub == 'US Atlantic')
+    elif group == "Himawari":
+        config['satellite'] = chosen[2]
+        config['reader'] = 'ahi_hsd'
+        config['is_wp'] = (sub == 'West Pacific')
+        config['is_us_h9'] = (sub == 'US Atlantic H9')
+        config['is_target_area'] = (sub in ['Target Area', 'US Atlantic H9'])
+        config['him_prod'] = 'AHI-L1b-Target/' if config['is_target_area'] else 'AHI-L1b-FLDK/'
+    elif group == "Meteosat":
+        config['satellite'] = chosen[2]
+        config['reader'] = chosen[3]
+        config['collection'] = chosen[4]
+        config['is_eumetsat'] = True
+        config['sat_choice'] = chosen[0]
+    elif group == "AVHRR":
+        config['satellite'] = chosen[2]
+        config['reader'] = chosen[3]
+        config['collection'] = chosen[4]
+        config['is_eumetsat'] = True
+    elif group == "Historical":
+        config['satellite'] = chosen[2]
+        config['reader'] = chosen[3]
+        config['sat_choice'] = chosen[4]
+        if sub == 'MTSAT':
+            config['is_mtsat'] = True
+        else:
+            config['is_gms'] = True
+    elif group == "VIIRS":
+        config['satellite'] = chosen[2]
+        config['reader'] = 'viirs'
+        config['sat_choice'] = chosen[4]
+        config['is_viirs'] = True
+        viirs_map = {'39': 'npp', '40': 'noaa20', '41': 'noaa21'}
+        config['viirs_sat_key'] = viirs_map.get(chosen[4], 'npp')
+    elif group == "Special":
+        config['satellite'] = chosen[2]
+        config['reader'] = chosen[3]
+        config['sat_choice'] = chosen[4]
+        config['is_ph'] = (chosen[4] == '26')
+        config['him_prod'] = 'AHI-L1b-FLDK/'
+    return config
+
+def handle_ascat_selection():
+    print("\n  ASCAT MetOp Satellite:")
+    for k, v in METOP_COLLECTIONS.items():
+        if k != 'ALL':
+            print(f"    {k} — {v['name']} ({v['status']})")
+    print("    ALL — All available")
+    ascat_letter = _input("  Select (default C): ", "C").upper()
+    if ascat_letter not in METOP_COLLECTIONS:
+        ascat_letter = 'C'
+    _sep("BACKGROUND SATELLITE (for ASCAT overlay)")
+    bg_group = choose_satellite_group()
+    if bg_group == 'ASCAT':
+        print("  ASCAT on ASCAT not supported. Defaulting to GOES.")
+        bg_group = 'GOES'
+    bg_config = select_satellite(bg_group) if bg_group else select_satellite('GOES')
+    bg_config['is_ascat'] = True
+    bg_config['ascat_letter'] = ascat_letter
+    return bg_config
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN SCRIPT FLOW
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Step 1: Satellite Selection
+sat_group = choose_satellite_group()
+if sat_group is None:
+    print("Invalid selection. Exiting.")
+    sys.exit()
+
+sat_config = select_satellite(sat_group)
+is_ascat = sat_config.get('is_ascat', False)
+
+# Extract config
+satellite = sat_config['satellite']
+reader = sat_config['reader']
+is_mtsat = sat_config['is_mtsat']
+is_gms = sat_config['is_gms']
+is_eumetsat = sat_config['is_eumetsat']
+is_viirs = sat_config['is_viirs']
+is_wp = sat_config['is_wp']
+is_us = sat_config['is_us']
+is_us_h9 = sat_config['is_us_h9']
+is_ph = sat_config['is_ph']
+is_mesoscale = sat_config['is_mesoscale']
+meso_num = sat_config['meso_num']
+is_target_area = sat_config['is_target_area']
+him_prod = sat_config['him_prod']
+collection = sat_config['collection']
+sat_choice = sat_config.get('sat_choice')
+viirs_sat_key = sat_config.get('viirs_sat_key')
+ascat_letter = sat_config.get('ascat_letter')
+
+# Defaults
+target_dt = datetime.datetime.utcnow().replace(second=0, microsecond=0)
+lat, lon = 12.88, 121.77
+crop_deg = 7.5
+final_image_size = (1600, 1600)
+band_num = 0
+band_fmt = "B04"
+is_tc = False
+selected_cmap = "irg"
+user_cmap, cmap_vmin, cmap_vmax = AVAILABLE_CMAPS.get('irg', (plt.get_cmap('gray'), -100, 50))
+show_colormap = True
+storm_data = None
+show_storm_details = False
+show_best_track_overlay = False
+do_animation = False
+anim_format = "gif"
+anim_speed_ms = 500
+anim_skip_mins = 60
+anim_start_dt = None
+anim_end_dt = None
+anim_frame_dts = []
+_disp_seconds = False
+_time_from_best_track = False
+is_daynight_mode = False
+track_data = []
+viirs_lats = None
+viirs_lons = None
+show_min_center_temp = True
+best_track_source_type = None
+viirs_band = "I05"
+
+# Step 2: Animation
+if not is_ascat:
+    _sep("ANIMATION")
+    if is_mtsat or is_gms:
+        print("  Note: Animation supported but may be slow for historical satellites.")
+    do_animation = _input("  Enable animation? (y/n, default n): ", "n").lower() == 'y'
+    if do_animation:
+        anim_format = _input("  Format (gif/mp4, default gif): ", "gif").lower()
+        if anim_format not in ['gif', 'mp4']:
+            anim_format = 'gif'
+        anim_speed_ms = int(_input("  Frame speed (ms, default 500): ", "500"))
+        anim_skip_mins = int(_input("  Time step (mins, default 60): ", "60"))
+        start_in = _input("  Start time (YYYY-MM-DD HH:MM): ")
+        end_in = _input("  End time   (YYYY-MM-DD HH:MM): ")
+        anim_start_dt = datetime.datetime.strptime(start_in, "%Y-%m-%d %H:%M")
+        anim_end_dt = datetime.datetime.strptime(end_in, "%Y-%m-%d %H:%M")
+        dt_cursor = anim_start_dt
+        while dt_cursor <= anim_end_dt:
+            anim_frame_dts.append(dt_cursor)
+            dt_cursor += datetime.timedelta(minutes=anim_skip_mins)
+        target_dt = anim_start_dt
+        print(f"  {len(anim_frame_dts)} frames planned ({anim_skip_mins} min steps)")
+
+# Step 3: Storm Data Source
+if is_wp or is_us or is_us_h9 or is_ph:
+    storm_source = "1"
+else:
+    _sep("STORM DATA SOURCE")
+    print("  1: None (manual coordinates)")
+    print("  2: Active storms (Knack API)")
+    print("  3: Best track - temp (single time)")
+    print("  4: Best track - invest (single time)")
+    print("  5: JTWC Best Track (Official JTWC archive)")
+    print("-" * 55)
+    storm_source = _input("  Selection (default 1): ", "1")
+
+def prompt_manual_coords():
+    l = float(_input("  Latitude  (deg, +N/-S): ", "20.0"))
+    lo = float(_input("  Longitude (deg, +E/-W): ", "145.8"))
+    c = float(_input("  Crop degrees (zoom, default 5.0): ", "5.0"))
+    return l, lo, c
+
+if storm_source == "1":
+    if not (is_wp or is_us or is_us_h9 or is_ph):
+        lat, lon, crop_deg = prompt_manual_coords()
+elif storm_source == "2":
+    print("  Fetching active storms...")
+    storms = list_active_storms()
+    if storms:
+        print_storm_list(storms)
+        sel = _input("  Select storm by # or name/ATCF ID: ")
+        storm_id = storms[int(sel) - 1].get('atcf_id', '') if sel.isdigit() and 1 <= int(sel) <= len(storms) else sel
+        storm_data = get_storm_data(storm_id, target_dt)
+        if storm_data:
+            storm_data['source_type'] = 'knack'
+            if 'storm_name' in storm_data and not storm_data.get('name'):
+                storm_data['name'] = storm_data['storm_name']
+            lat = storm_data.get('latitude', 20.0)
+            lon = storm_data.get('longitude', 145.8)
+            print(f"  Storm position: {lat:.2f}N, {lon:.2f}E")
+            show_storm_details = True
+            crop_deg = float(_input("  Crop degrees (default 5.0): ", "5.0"))
+        else:
+            print("  No storm found.")
+            lat, lon, crop_deg = prompt_manual_coords()
+    else:
+        lat, lon, crop_deg = prompt_manual_coords()
+elif storm_source in ["3", "4", "5"]:
+    if storm_source == "3":
+        best_track_source_type = 'temp'
+        year = _input("  Year (default 2025): ", "2025")
+        basin = _input("  Basin (default ep): ", "ep").lower()
+        storm_num = _input("  Storm number (e.g. 04): ", "04")
+        track_data = fetch_best_track_data('temp', {'year': int(year), 'basin': basin, 'storm_num': storm_num})
+    elif storm_source == "4":
+        best_track_source_type = 'invest'
+        year = _input("  Year (default 2026): ", "2026")
+        basin = _input("  Basin (default WP): ", "WP").upper()
+        letter = _input("  Letter (default A): ", "A").upper()
+        invest_num = _input("  Invest number (e.g. 90): ", "90")
+        track_data = fetch_best_track_data('invest', {'year': int(year), 'basin': basin, 'letter': letter, 'invest_num': invest_num})
+    else:
+        best_track_source_type = 'jtwc'
+        year = _input("  Year (e.g. 2013): ")
+        storm_num = _input("  Storm number (e.g. 23): ")
+        basin = _input("  Basin (WP/EP/SH/IO/AL/CP, default WP): ", "WP").upper()
+        track_data = fetch_jtwc_best_track(year, storm_num, basin)
+    if track_data:
+        for pt in track_data:
+            if 'basin' not in pt:
+                pt['basin'] = basin
+        first_dt, last_dt = track_data[0]['dt'], track_data[-1]['dt']
+        display_name, storm_category = get_storm_display_name(track_data[0], best_track_source_type)
+        print(f"\n  Track: {first_dt.strftime('%Y-%m-%d %H:%M')} → {last_dt.strftime('%Y-%m-%d %H:%M')} UTC")
+        print(f"  Storm: {display_name}  |  Basin: {track_data[0].get('basin', 'WP')}  |  {storm_category}")
+        print(f"  Winds: {track_data[0]['wind']}kt  |  Pressure: {track_data[0]['pressure']}hPa")
+        if do_animation:
+            _time_from_best_track = True
+            il, ilo, isd = interpolate_position(track_data, target_dt)
+            if il:
+                lat, lon = il, ilo
+                storm_data = isd
+                show_storm_details = True
+                display_name, cat_full = get_storm_display_name(isd, best_track_source_type)
+                print(f"  Start position: {lat:.2f}, {lon:.2f}  |  {display_name} ({cat_full})")
+            crop_deg = float(_input("  Crop degrees (default 10.0): ", "10.0"))
+        else:
+            time_in = _input("  Enter time (YYYY-MM-DD HH:MM): ")
+            target_dt = datetime.datetime.strptime(time_in, "%Y-%m-%d %H:%M")
+            _time_from_best_track = True
+            il, ilo, isd = interpolate_position(track_data, target_dt)
+            if il:
+                lat, lon = il, ilo
+                storm_data = isd
+                show_storm_details = True
+                display_name, cat_full = get_storm_display_name(isd, best_track_source_type)
+                print(f"  Position: {lat:.2f}, {lon:.2f}  |  {display_name} | {isd['wind']}kt {isd['pressure']}hPa")
+                print(f"  Category: {cat_full}")
+            crop_deg = float(_input("  Crop degrees (default 10.0): ", "10.0"))
+    else:
+        print("  No track data found. Exiting.")
+        sys.exit()
+
+if show_storm_details:
+    show_best_track_overlay = _input("\n  Show best track overlay? (y/n, default n): ", "n").lower() == 'y'
+
+# Step 4: Time
+if not do_animation and not _time_from_best_track:
+    if is_gms or is_mtsat:
+        _sep("TIME")
+        time_in = _input("  Enter time (YYYY-MM-DD HH:MM): ")
+        if time_in:
+            target_dt = datetime.datetime.strptime(time_in, "%Y-%m-%d %H:%M")
+    elif not is_ascat:
+        _sep("TIME SOURCE")
+        print("  1: Latest available")
+        print("  2: Custom time")
+        print("-" * 55)
+        time_src = _input("  Selection (default 1): ", "1")
+        if time_src == '2':
+            time_in = _input("  Enter time (YYYY-MM-DD HH:MM): ")
+            if time_in:
+                target_dt = datetime.datetime.strptime(time_in, "%Y-%m-%d %H:%M")
+        else:
+            fs = s3fs.S3FileSystem(anon=True) if not (is_eumetsat or is_viirs) else None
+            if is_viirs:
+                print("  Searching for latest VIIRS data...")
+                # Will be handled in fetch
+            elif not is_ascat:
+                found_dt, found_str = find_latest_satellite_data(fs, satellite, him_prod, target_dt)
+                if found_dt:
+                    target_dt = found_dt
+                    print(f"  Using: {found_str}")
+
+# Step 5: Band Selection
+_sep("BAND SELECTION")
+if not is_ascat:
+    print("  1: Manual")
+    print("  2: Auto day/night (per-frame if animating)")
+    print("-" * 55)
+band_mode = "1" if is_ascat else _input("  Selection (default 1): ", "1")
+
+def _apply_band_daynight(ref_dt, ref_lat, ref_lon):
+    global band_num, band_fmt, is_tc, show_colormap, is_daynight_mode, viirs_band
+    z = calculate_solar_zenith(ref_lat, ref_lon, ref_dt)
+    is_daynight_mode = True
+    if is_gms:
+        band_num = 4
+        band_fmt = "B04"
+        is_tc = False
+        show_colormap = True
+    elif is_viirs:
+        viirs_band = "I01" if z < 90 else "I05"
+        band_fmt = viirs_band
+        band_num = 5 if z >= 90 else 1
+        is_tc = False
+        show_colormap = (z >= 90)
+    elif is_eumetsat:
+        band_num = 1 if z < 90 else 9
+        band_fmt = f"B{band_num:02d}"
+        is_tc = False
+        show_colormap = (z >= 90)
+    elif is_mtsat:
+        band_num = 1 if z < 90 else 4
+        band_fmt = f"B{band_num:02d}"
+        is_tc = False
+        show_colormap = (z >= 90)
+    else:
+        band_num = 3 if z < 90 else 13
+        band_fmt = f"B{band_num:02d}"
+        is_tc = False
+        show_colormap = (z >= 90)
+    icon = "☀️" if z < 90 else "🌙"
+    print(f"  {icon} Zenith {z:.0f}° → {band_fmt}")
+
+def _apply_band_manual():
+    global band_num, band_fmt, is_tc, show_colormap, viirs_band
+    if is_viirs:
+        print("  VIIRS Bands:")
+        for key, info in VIIRS_BANDS.items():
+            thermal_mark = "🌡️" if info['thermal'] else "☀️"
+            print(f"    {key}: {info['name']} {thermal_mark}")
+        viirs_band = _input("  Select band (I01-I05, default I05): ", "I05").upper()
+        if viirs_band not in VIIRS_BANDS:
+            viirs_band = "I05"
+        band_fmt = viirs_band
+        band_num = 5 if viirs_band in ['I04', 'I05'] else 1
+        is_tc = False
+        show_colormap = VIIRS_BANDS[viirs_band]['thermal']
+    elif is_gms:
+        band_num = 4
+        band_fmt = "B04"
+        is_tc = False
+        show_colormap = True
+    elif is_eumetsat and collection and 'SEVIRI' in str(collection).upper():
+        SEVIRI_NAMES = {1: "VIS0.6", 2: "VIS0.8", 3: "NIR1.6", 4: "IR3.9", 5: "WV6.2",
+                        6: "WV7.3", 7: "IR8.7", 8: "IR9.7", 9: "IR10.8", 10: "IR12.0",
+                        11: "IR13.4", 12: "HRV"}
+        print("  SEVIRI channels:")
+        for n in range(1, 13):
+            thermal_mark = "🌡️" if SEVIRI_CHANNELS[n][1] else "☀️"
+            print(f"    {n}: {SEVIRI_NAMES[n]} {thermal_mark}")
+        band_num = int(_input("  Select band (1-12): ", "9"))
+        band_fmt = f"B{band_num:02d}"
+        is_tc = False
+        show_colormap = SEVIRI_CHANNELS[band_num][1]
+    elif is_eumetsat and collection and 'AVHRR' in str(collection).upper():
+        print("  AVHRR channels:")
+        print("    1:0.63µm ☀️   2:0.86µm ☀️   3:1.6µm ☀️   4:10.8µm 🌡️   5:12.0µm 🌡️")
+        band_num = int(_input("  Select band (1-5): ", "4"))
+        band_fmt = f"B{band_num:02d}"
+        is_tc = False
+        show_colormap = AVHRR_CHANNELS[band_num][1]
+    elif is_mtsat:
+        print("  MTSAT channels:")
+        print("    1:VIS ☀️  2:VIS ☀️  3:WV ☀️  4:IR1 🌡️  5:IR2 🌡️")
+        band_num = int(_input("  Band (1-5): ", "4"))
+        band_fmt = f"B{band_num:02d}"
+        is_tc = False
+        show_colormap = band_num >= 3
+    else:
+        rows = [("1:VIS(0.47)", "2:VIS(0.51)", "3:NIR(0.64)", "4:NIR(0.86)"),
+                ("5:NIR(1.6)", "6:NIR(2.3)", "7:SWIR(3.9)", "8:WV(6.2)"),
+                ("9:WV(6.9)", "10:WV(7.3)", "11:IR(8.6)", "12:IR(9.6)"),
+                ("13:IR(10.4)", "14:IR(11.2)", "15:IR(12.4)", "16:IR(13.3)"),
+                ("true_color:True Color RGB", "", "", "")]
+        for r in rows:
+            print("".join([f"  {c:<22}" for c in r if c]))
+        print("-" * 55)
+        band_in = _input("  Band: ", "13")
+        is_tc = band_in.lower() == 'true_color'
+        band_fmt = f"B{int(band_in):02d}" if not is_tc else 'true_color'
+        band_num = int(re.search(r'\d+', band_fmt).group()) if not is_tc else 0
+        show_colormap = not is_tc and band_num >= 7
+
+_band_ref_dt = anim_frame_dts[0] if do_animation and anim_frame_dts else target_dt
+if band_mode == "2":
+    _apply_band_daynight(_band_ref_dt, lat, lon)
+else:
+    _apply_band_manual()
+
+# Step 6: Colormap
+if show_colormap:
+    _sep("COLORMAP")
+    cmap_names = list(AVAILABLE_CMAPS.keys())
+    for i, cm in enumerate(cmap_names, 1):
+        print(f"  {i:>2}: {cm}")
+    print("-" * 55)
+    sel = _input("  Select (default irg): ", "irg")
+    if sel.isdigit() and 1 <= int(sel) <= len(cmap_names):
+        selected_cmap = cmap_names[int(sel) - 1]
+    elif sel in AVAILABLE_CMAPS:
+        selected_cmap = sel
+    user_cmap, cmap_vmin, cmap_vmax = AVAILABLE_CMAPS[selected_cmap]
+else:
+    selected_cmap = "gray"
+    user_cmap = plt.get_cmap('gray')
+    cmap_vmin = 0
+    cmap_vmax = 1
+
+show_min_center_temp = _input("\n  Include Eye & CDO temperature stats? (y/n, default y): ", "y").lower() != 'n'
+
+# Image size and extent
+if is_gms:
+    final_image_size = (1600, 1600)
+elif is_wp or is_us:
+    final_image_size = (2000, 1700)
+elif is_mesoscale or is_target_area:
+    final_image_size = (1600, 1600)
+elif is_ph:
+    final_image_size = (1800, 1600)
+elif is_viirs or is_ascat:
+    final_image_size = (1600, 1600)
+else:
+    final_image_size = (1600, 1600)
+
+_disp_seconds = (not is_mtsat and not is_gms and (is_mesoscale or is_target_area or is_eumetsat or is_viirs or is_ascat))
+
+if is_eumetsat or is_gms or is_viirs or is_ascat:
+    extent = (lon - crop_deg, lat - crop_deg, lon + crop_deg, lat + crop_deg)
+elif is_wp:
+    extent = (100.0, 0.0, 180.0, 50.0)
+elif is_us or is_us_h9:
+    extent = (-110.0, 0.0, -10.0, 60.0)
+elif is_ph:
+    extent = (115.0, 5.0, 130.0, 22.0)
+else:
+    extent = (lon - crop_deg, lat - crop_deg, lon + crop_deg, lat + crop_deg)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATA FETCH
+# ═══════════════════════════════════════════════════════════════════════════════
+
+if is_ascat:
+    print(f"\n  Fetching ASCAT data for Metop-{ascat_letter}...")
+    ascat_result = fetch_ascat_by_metop(ascat_letter, hours_back=72, target_dt=target_dt)
+    if not ascat_result:
+        print("  No ASCAT data found. Exiting.")
+        sys.exit()
+    ascat_dt = ascat_result['datetime']
+    ascat_data = read_all_ascat_vectors(ascat_result['file_path'])
+    if not ascat_data or ascat_data['total_vectors'] == 0:
+        print("  No valid ASCAT vectors. Exiting.")
+        sys.exit()
+    print(f"\n  Fetching background satellite ({satellite}) near {ascat_dt.strftime('%Y-%m-%d %H:%M UTC')}...")
+    bg_result = fetch_one_frame(sat_config, ascat_dt, band_fmt, band_num, is_tc,
+                                extent, final_image_size, lat, lon, crop_deg,
+                                viirs_band=viirs_band if is_viirs else None)
+    if bg_result is None or bg_result[0] is None:
+        print("  Background satellite fetch failed. Exiting.")
+        sys.exit()
+    val_data, local_scn, band_key, sat_actual_dt, swath_lats, swath_lons = bg_result
+    if is_viirs and swath_lats is not None:
+        viirs_lats, viirs_lons = swath_lats, swath_lons
+    target_dt = ascat_dt
+    print(f"\n  ASCAT time: {ascat_dt.strftime('%Y-%m-%d %H:%M UTC')}")
+    print(f"  Satellite time: {sat_actual_dt.strftime('%Y-%m-%d %H:%M UTC')}")
+elif not do_animation:
+    result = fetch_one_frame(sat_config, target_dt, band_fmt, band_num, is_tc,
+                             extent, final_image_size, lat, lon, crop_deg,
+                             viirs_band=viirs_band if is_viirs else None)
+    if result is None or result[0] is None:
+        print("  Data fetch failed. Exiting.")
+        sys.exit()
+    val_data, local_scn, band_key, sat_dt, swath_lats, swath_lons = result
+    if is_viirs and swath_lats is not None:
+        viirs_lats, viirs_lons = swath_lats, swath_lons
+    target_dt = sat_dt
+else:
+    # Animation fetch
+    os.makedirs(ANIM_FRAME_CACHE_DIR, exist_ok=True)
+    print(f"\n  Fetching {len(anim_frame_dts)} frames...")
+    anim_frames = []
+
+    def _fetch_frame_task(frame_dt):
+        _band_num, _band_fmt, _is_tc = band_num, band_fmt, is_tc
+        _viirs_band = viirs_band if is_viirs else None
+        if band_mode == "2":
+            z = calculate_solar_zenith(lat, lon, frame_dt)
+            if is_viirs:
+                _viirs_band = "I01" if z < 90 else "I05"
+                _band_num = 5 if z >= 90 else 1
+                _band_fmt = _viirs_band
+            elif is_gms:
+                _band_num = 4
+                _band_fmt = "B04"
+            elif is_eumetsat:
+                _band_num = 1 if z < 90 else 9
+                _band_fmt = f"B{_band_num:02d}"
+            elif is_mtsat:
+                _band_num = 1 if z < 90 else 4
+                _band_fmt = f"B{_band_num:02d}"
+            else:
+                _band_num = 3 if z < 90 else 13
+                _band_fmt = f"B{_band_num:02d}"
+            _is_tc = False
+        frame_lat, frame_lon = lat, lon
+        if track_data:
+            il, ilo, isd = interpolate_position(track_data, frame_dt)
+            if il:
+                frame_lat, frame_lon = il, ilo
+        frame_extent = (frame_lon - crop_deg, frame_lat - crop_deg, frame_lon + crop_deg, frame_lat + crop_deg)
+        result = fetch_one_frame(sat_config, frame_dt, _band_fmt, _band_num, _is_tc,
+                                 frame_extent, final_image_size, frame_lat, frame_lon, crop_deg,
+                                 viirs_band=_viirs_band)
+        if result is None or result[0] is None:
+            return None
+        vd, ls, bk, sdt, slats, slons = result
+        return {'dt': sdt, 'val_data': vd, 'local_scn': ls, 'band_key': bk,
+                'extent': frame_extent, 'lat': frame_lat, 'lon': frame_lon,
+                'swath_lats': slats, 'swath_lons': slons}
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=FETCH_THREADS) as executor:
+        future_to_dt = {executor.submit(_fetch_frame_task, dt): dt for dt in anim_frame_dts}
+        for future in concurrent.futures.as_completed(future_to_dt):
+            frame_dt = future_to_dt[future]
+            try:
+                frame = future.result()
+                if frame:
+                    anim_frames.append(frame)
+                    print(f"  ✓ {frame['dt'].strftime('%Y-%m-%d %H:%M UTC')} ready")
+                else:
+                    print(f"  ✗ No data for {frame_dt}")
+            except Exception as e:
+                print(f"  ✗ Error for {frame_dt}: {e}")
+    anim_frames.sort(key=lambda x: x['dt'])
+    print(f"\n  {len(anim_frames)} frames ready.")
+    if not anim_frames:
+        print("  No frames collected. Exiting.")
+        sys.exit()
+    val_data = anim_frames[0]['val_data']
+    local_scn = anim_frames[0]['local_scn']
+    band_key = anim_frames[0]['band_key']
+    extent = anim_frames[0]['extent']
+    target_dt = anim_frames[0]['dt']
+    if is_viirs and anim_frames[0].get('swath_lats') is not None:
+        viirs_lats = anim_frames[0]['swath_lats']
+        viirs_lons = anim_frames[0]['swath_lons']
+
+print("\n" + "=" * 55)
+print("  DATA SUMMARY:")
+print(f"  val_data type: {type(val_data)}")
+if val_data is not None:
+    print(f"  val_data shape: {val_data.shape}")
+    print(f"  val_data valid pixels: {np.sum(~np.isnan(val_data)):,}")
+    if np.sum(~np.isnan(val_data)) > 0:
+        print(f"  val_data range: {np.nanmin(val_data):.2f} to {np.nanmax(val_data):.2f}")
+else:
+    print("  val_data is None!")
+print("=" * 55)
+print("  PART 1 COMPLETE – Ready for Part 2.")
+print("=" * 55)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SATELLITE IMAGERY TOOL — PART 2 (plotting & output) – PROFESSIONAL v10
+# WITH UNIVERSAL TEMPERATURE STATS (works with or without storm data)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
+import cartopy.crs as ccrs
+import cartopy.feature as cf
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from PIL import Image
+import gc, os, datetime, re, base64
+from collections import Counter
+import imageio.v2 as imageio
+from IPython.display import display, HTML, Image as IPImage
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CONSTANTS & CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Theme ──────────────────────────────────────────────────────────────────────
+if THEME.lower() == 'dark':
+    BG_COLOR, TEXT_COLOR = 'black', 'white'
+    BORDER_COLOR = GRID_COLOR = '#ffffff'
+    CBAR_EDGE, MAP_FRAME_COLOR = 'white', '#ffffff'
+    BG_RGB = (0, 0, 0)
+    ASCAT_LEGEND_BG, ASCAT_LEGEND_EDGE = '#1a1a1a', '#ffffff'
+else:
+    BG_COLOR, TEXT_COLOR = 'white', 'black'
+    BORDER_COLOR = GRID_COLOR = 'white'
+    CBAR_EDGE, MAP_FRAME_COLOR = '#333333', '#000000'
+    BG_RGB = (255, 255, 255)
+    ASCAT_LEGEND_BG, ASCAT_LEGEND_EDGE = '#f0f0f0', '#333333'
+
+# ── ASCAT Plotting ─────────────────────────────────────────────────────────────
+ASCAT_BARB_LENGTH    = 5.5
+ASCAT_BARB_LINEWIDTH = 0.6
+ASCAT_BARB_ALPHA     = 1.0
+ASCAT_CBAR_VMIN      = 0
+ASCAT_CBAR_VMAX      = 100
+ASCAT_CBAR_STEP      = 10
+ASCAT_BARB_SUBSAMPLE_SPACING = 0.3
+
+# ── Band Information ──────────────────────────────────────────────────────────
+VIIRS_BANDS_INFO = {
+    'I01': {'thermal': False}, 'I02': {'thermal': False},
+    'I03': {'thermal': False}, 'I04': {'thermal': True},
+    'I05': {'thermal': True},
+}
+
+# ── Satellite Name Mapping ────────────────────────────────────────────────────
+SAT_NAME_MAP = {
+    "noaa-goes16": "GOES-16", "noaa-goes17": "GOES-17",
+    "noaa-goes18": "GOES-18", "noaa-goes19": "GOES-19",
+    "noaa-himawari9": "Himawari-9", "noaa-himawari8": "Himawari-8",
+    "mtsat-1r": "MTSAT-1R", "mtsat-2": "MTSAT-2",
+    "GMS1": "GMS1", "GMS2": "GMS2", "GMS3": "GMS3",
+    "GMS4": "GMS4", "GMS5": "GMS5",
+    "Meteosat-11": "Meteosat-11", "Meteosat-9": "Meteosat-9",
+    "Metop-A": "Metop-A", "NPP": "VIIRS NPP",
+    "NOAA-20": "VIIRS NOAA-20", "NOAA-21": "VIIRS NOAA-21",
+}
+
+# ── Grayscale colormap names ──────────────────────────────────────────────────
+GRAYSCALE_CMAP_NAMES = {'gray', 'grey', 'grayscale', 'gray_r', 'grey_r',
+                         'bone', 'pink', 'binary', 'Greys', 'Greys_r'}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STORM CLASSIFICATION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def classify_storm(wind_kt, basin="", lat=None, status=None):
+    """Classify a storm based on wind speed, basin, and status."""
+
+    if status and status.upper() == 'RL':
+        return "Remnant Low", "RL", "#808080", False
+
+    basin = basin.upper() if basin else ""
+
+    # Atlantic / Eastern Pacific basins
+    if basin in ['AL', 'ATLANTIC', 'EP', 'CP', 'EASTERN PACIFIC', 'CENTRAL PACIFIC']:
+        if wind_kt >= HURRICANE_CAT5_THRESHOLD:
+            return "Category 5 Major Hurricane", "Cat-5 MH", "#ff0000", False
+        if wind_kt >= HURRICANE_CAT4_THRESHOLD:
+            return "Category 4 Major Hurricane", "Cat-4 MH", "#ff4444", False
+        if wind_kt >= HURRICANE_CAT3_THRESHOLD:
+            return "Category 3 Major Hurricane", "Cat-3 MH", "#ff8888", False
+        if wind_kt >= HURRICANE_CAT2_THRESHOLD:
+            return "Category 2 Hurricane", "Cat-2 H", "#ffaa66", False
+        if wind_kt >= HURRICANE_CAT1_THRESHOLD:
+            return "Category 1 Hurricane", "Cat-1 H", "#ffcc88", False
+        if wind_kt >= 50: return "Tropical Storm", "TS", "#ffff66", False
+        if wind_kt >= 34: return "Tropical Depression", "TD", "#aaffaa", False
+        return "Disturbance", "DB", "#cccccc", True
+
+    # Western Pacific basin
+    if basin in ['WP', 'WESTERN PACIFIC', 'W PACIFIC']:
+        if wind_kt >= SUPER_TYPHOON_THRESHOLD:
+            return "Super Typhoon", "STY", "#ff0066", False
+        if wind_kt >= TYPHOON_TY_THRESHOLD:
+            return "Typhoon", "TY", "#ff6600", False
+        if wind_kt >= TYPHOON_STS_THRESHOLD:
+            return "Severe Tropical Storm", "STS", "#ffcc00", False
+        if wind_kt >= TYPHOON_TS_THRESHOLD:
+            return "Tropical Storm", "TS", "#ffff66", False
+        if wind_kt >= 34: return "Tropical Depression", "TD", "#aaffaa", False
+        return "Disturbance", "DB", "#cccccc", True
+
+    # Southern Hemisphere
+    if basin in ['SH', 'SOUTHERN HEMISPHERE', 'AUSTRALIAN', 'AUS']:
+        if wind_kt >= CYCLONE_CAT5_THRESHOLD:
+            return "Category 5 Severe Tropical Cyclone", "Cat-5 TC", "#ff0066", False
+        if wind_kt >= CYCLONE_CAT4_THRESHOLD:
+            return "Category 4 Severe Tropical Cyclone", "Cat-4 TC", "#ff4444", False
+        if wind_kt >= CYCLONE_CAT3_THRESHOLD:
+            return "Category 3 Severe Tropical Cyclone", "Cat-3 TC", "#ff8888", False
+        if wind_kt >= CYCLONE_CAT2_THRESHOLD:
+            return "Category 2 Tropical Cyclone", "Cat-2 TC", "#ffaa66", False
+        if wind_kt >= CYCLONE_CAT1_THRESHOLD:
+            return "Category 1 Tropical Cyclone", "Cat-1 TC", "#ffcc88", False
+        if wind_kt >= 34: return "Tropical Cyclone", "TC", "#ffff66", False
+        return "Tropical Low", "TL", "#cccccc", True
+
+    # Indian Ocean
+    if basin in ['IO', 'INDIAN OCEAN', 'NI', 'SI']:
+        if wind_kt >= IOCYCLONE_CAT5_THRESHOLD:
+            return "Super Cyclonic Storm", "Super CS", "#ff0066", False
+        if wind_kt >= IOCYCLONE_CAT4_THRESHOLD:
+            return "Very Intense Cyclonic Storm", "VICS", "#ff4444", False
+        if wind_kt >= IOCYCLONE_CAT3_THRESHOLD:
+            return "Intense Cyclonic Storm", "ICS", "#ff8888", False
+        if wind_kt >= IOCYCLONE_CAT2_THRESHOLD:
+            return "Cyclonic Storm", "CS", "#ffaa66", False
+        if wind_kt >= IOCYCLONE_CAT1_THRESHOLD:
+            return "Severe Cyclonic Storm", "SCS", "#ffcc88", False
+        if wind_kt >= 34: return "Deep Depression", "DD", "#ffff66", False
+        return "Depression", "D", "#cccccc", True
+
+    # Generic / Unknown basin
+    if wind_kt >= 137: return "Super Cyclone", "Super", "#ff0066", False
+    if wind_kt >= 113: return "Intense Cyclone", "Intense", "#ff4444", False
+    if wind_kt >= 96:  return "Severe Cyclone", "Severe", "#ff8888", False
+    if wind_kt >= 64:  return "Cyclone", "Cyclone", "#ffaa66", False
+    if wind_kt >= 50:  return "Strong Storm", "Storm", "#ffff66", False
+    if wind_kt >= 34:  return "Tropical Storm", "TS", "#aaffaa", False
+    return "Disturbance", "DB", "#cccccc", True
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STORM NAME FORMATTING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_storm_display_name(storm_pt, source_type=''):
+    """Get formatted storm display name."""
+    name = storm_pt.get('name', '') or storm_pt.get('storm_name', '')
+    storm_id = storm_pt.get('storm_id', '')
+    basin = storm_pt.get('basin', '')
+    wind = int(storm_pt.get('wind', storm_pt.get('winds', 0)))
+    atcf_id = storm_pt.get('atcf_id', '')
+    status = storm_pt.get('status', '')
+
+    cat_full, cat_short, color, is_weak = classify_storm(wind, basin, status=status)
+
+    # Remnant Low
+    if status and status.upper() == 'RL':
+        if name and name not in ['RL', 'Remnant Low', 'Remnant'] \
+           and not re.match(r'^[A-Z]{2}\d{2,3}$', name):
+            return f"Remnant Low {name}", "Remnant Low"
+        if storm_id: return f"Remnant Low {storm_id}", "Remnant Low"
+        if atcf_id:
+            m = re.search(r'(\d{2,3})([A-Z])', atcf_id.replace(' ', ''))
+            if m: return f"Remnant Low {m.group(1)}{m.group(2)}", "Remnant Low"
+            return f"Remnant Low {atcf_id}", "Remnant Low"
+        return "Remnant Low", "Remnant Low"
+
+    category_terms = [
+        'Tropical Storm', 'Hurricane', 'Typhoon', 'Cyclone',
+        'Super Typhoon', 'Severe Tropical Storm', 'Tropical Depression',
+        'Disturbance', 'Depression', 'Deep Depression', 'Remnant Low',
+        'Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5',
+        'Severe Cyclonic Storm', 'Very Intense Cyclonic Storm',
+        'Super Cyclonic Storm', 'Intense Cyclonic Storm', 'Cyclonic Storm',
+        'Major Hurricane', 'Severe Cyclone', 'Intense Cyclone',
+        'Super Cyclone', 'Strong Storm', 'Tropical Low', 'Tropical Cyclone',
+    ]
+
+    def is_category_term(s):
+        return s.strip().lower() in [t.lower() for t in category_terms] if s else False
+
+    # Named storms (>=34 kt)
+    if wind >= 34:
+        if name and is_category_term(name):
+            if atcf_id:
+                m = re.search(r'(\d{2,3})([A-Z])', atcf_id.replace(' ', ''))
+                if m: return f"{cat_full} {m.group(1)}{m.group(2)}", cat_full
+                m = re.match(r'^([A-Z]{2})(\d{2})(\d{4})$', atcf_id)
+                if m: return f"{cat_full} {m.group(2)}{m.group(1)}", cat_full
+                return f"{cat_full} {atcf_id}", cat_full
+            if storm_id and not is_category_term(storm_id):
+                return f"{cat_full} {storm_id}", cat_full
+            return cat_full, cat_full
+
+        if name and not re.match(r'^[A-Z]{2}\d{2,3}$', name):
+            return name, cat_full
+        if name: return f"{cat_full} {name}", cat_full
+        if storm_id: return f"{cat_full} {storm_id}", cat_full
+        if atcf_id:
+            m = re.search(r'(\d{2,3})([A-Z])', atcf_id.replace(' ', ''))
+            if m: return f"{cat_full} {m.group(1)}{m.group(2)}", cat_full
+            return f"{cat_full} {atcf_id}", cat_full
+        return cat_full, cat_full
+
+    # Weak systems (<34 kt) → INVEST
+    invest_id = storm_pt.get('invest_id')
+    if not invest_id:
+        if atcf_id:
+            m = re.search(r'(\d{2,3})([A-Z])', atcf_id.replace(' ', ''))
+            if m: invest_id = f"{m.group(1)}{m.group(2)}"
+            else:
+                m = re.match(r'^([A-Z]{2})(\d{2,3})', atcf_id)
+                if m: invest_id = f"{m.group(2)}{m.group(1)[1]}"
+        if not invest_id and name:
+            m = re.search(r'(\d{2,3})([A-Z])', name)
+            if m: invest_id = m.group(0)
+        if not invest_id and storm_id:
+            m = re.search(r'(\d{2,3})', storm_id)
+            if m: invest_id = f"{m.group(1)}W"
+
+    if invest_id:
+        num = re.search(r'(\d{2,3})', str(invest_id))
+        lett = re.search(r'([A-Z])', str(invest_id).upper())
+        if num and lett: clean = f"{num.group(1)}{lett.group(1)}"
+        elif num: clean = f"{num.group(1)}W"
+        else: clean = str(invest_id)
+        return f"INVEST {clean}", cat_full
+
+    fallback = storm_id or name or 'INVEST'
+    return f"INVEST {fallback}", cat_full
+
+
+def build_storm_label(storm_data, best_track_source_type):
+    """Build storm info label for display with position."""
+    if not storm_data: return None
+
+    wind = int(storm_data.get('wind', storm_data.get('winds', 0)))
+    pressure = storm_data.get('pressure', '?')
+    lat = storm_data.get('lat', storm_data.get('latitude', 0))
+    lon = storm_data.get('lon', storm_data.get('longitude', 0))
+    display_name, cat_full = get_storm_display_name(storm_data, best_track_source_type)
+
+    # Build position string
+    lat_str = f"{abs(lat):.1f}°{'N' if lat >= 0 else 'S'}"
+    lon_str = f"{abs(lon):.1f}°{'E' if lon >= 0 else 'W'}"
+    
+    # Format pressure
+    pres_str = ""
+    if pressure and pressure != '?':
+        try:
+            pres_str = f", {int(float(pressure))} mb"
+        except:
+            pres_str = f", {pressure} mb"
+
+    # Line 1: Storm name with winds and pressure
+    if display_name.lower() == cat_full.lower() \
+       or cat_full.lower() in display_name.lower() \
+       or "INVEST" in display_name:
+        line1 = f"{display_name} • {wind} kt{pres_str}"
+    else:
+        line1 = f"{cat_full} {display_name} • {wind} kt{pres_str}"
+    
+    # Line 2: Position
+    line2 = f"Position: {lat_str}, {lon_str}"
+    
+    return f"{line1}\n{line2}"
+
+def build_map_text(storm_data, best_track_source_type, frame_lat, frame_lon):
+    """Build text for map overlay box."""
+    if not storm_data:
+        return MAP_TEXT_BOX_CUSTOM_TEXT or ""
+
+    wind = int(storm_data.get('wind', storm_data.get('winds', 0)))
+    basin = storm_data.get('basin', '')
+    pressure = storm_data.get('pressure', '?')
+    display_name, cat_full = get_storm_display_name(storm_data, best_track_source_type)
+
+    if MAP_TEXT_BOX_CUSTOM_TEXT:
+        text = MAP_TEXT_BOX_CUSTOM_TEXT
+        storm_name_value = display_name if (
+            display_name.lower() == cat_full.lower()
+            or cat_full.lower() in display_name.lower()
+        ) else f"{cat_full} {display_name}"
+
+        return (text.replace('{storm_name}', storm_name_value)
+                    .replace('{category}', cat_full)
+                    .replace('{wind}', str(wind))
+                    .replace('{pressure}', str(pressure))
+                    .replace('{lat}', f"{frame_lat:.1f}")
+                    .replace('{lon}', f"{frame_lon:.1f}")
+                    .replace('{basin}', basin or 'Unknown'))
+
+    if display_name.lower() == cat_full.lower() \
+       or cat_full.lower() in display_name.lower() \
+       or "INVEST" in display_name:
+        return f"{display_name}\n{wind} kt | {pressure} hPa"
+    return f"{cat_full} {display_name}\n{wind} kt | {pressure} hPa"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BAND TITLE FORMATTING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_band_title(satellite, reader, band_num, is_viirs, viirs_band,
+                   is_gms, is_mtsat, is_eumetsat):
+    """Generate clean band title string."""
+
+    # VIIRS
+    if is_viirs and viirs_band:
+        info = VIIRS_BANDS_INFO.get(viirs_band, {})
+        unit = "Brightness Temperature (°C)" if info.get('thermal', True) else "Reflectance (%)"
+        return f"Band {viirs_band} {unit}"
+
+    # GMS
+    if is_gms:
+        return "Band IR Brightness Temperature (°C)"
+
+    # MTSAT
+    if is_mtsat:
+        ch_names = {1: 'VIS', 2: 'VIS', 3: 'WV', 4: 'IR1', 5: 'IR2'}
+        ch_name = ch_names.get(band_num, f'CH{band_num}')
+        unit = "Brightness Temperature (°C)" if band_num >= 3 else "Reflectance (%)"
+        return f"Band {ch_name} {unit}"
+
+    # SEVIRI (Meteosat)
+    if is_eumetsat and 'seviri' in str(reader).lower():
+        sev_names = {1:'VIS0.6', 2:'VIS0.8', 3:'NIR1.6', 4:'IR3.9',
+                     5:'WV6.2', 6:'WV7.3', 7:'IR8.7', 8:'IR9.7',
+                     9:'IR10.8', 10:'IR12.0', 11:'IR13.4', 12:'HRV'}
+        ch_name = sev_names.get(band_num, f'Ch{band_num}')
+        unit = "Brightness Temperature (°C)" if band_num >= 4 else "Reflectance (%)"
+        return f"Band {ch_name} {unit}"
+
+    # AVHRR
+    if is_eumetsat and 'avhrr' in str(reader).lower():
+        unit = "Brightness Temperature (°C)" if band_num >= 4 else "Reflectance (%)"
+        return f"Band {band_num} {unit}"
+
+    # AHI / ABI (Himawari / GOES)
+    unit = "Brightness Temperature (°C)" if band_num >= 7 else "Reflectance (%)"
+    return f"Band {band_num} {unit}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPERATURE STATS (UNIVERSAL - works with or without storm data)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_temperature_stats(val_data, extent, storm_data, is_viirs, swath_lats, swath_lons,
+                          frame_lat, frame_lon, include_coords):
+    """
+    Calculate temperature statistics.
+    Returns list of strings to add to left title.
+    """
+    lines = []
+
+    try:
+        # Get coordinates and values
+        if is_viirs and swath_lats is not None and swath_lons is not None:
+            use_lats = swath_lats.flatten()
+            use_lons = swath_lons.flatten()
+            use_vals = val_data.flatten()
+        else:
+            ny, nx = val_data.shape
+            glons = np.linspace(extent[0], extent[2], nx)
+            glats = np.linspace(extent[3], extent[1], ny)
+            lon_grid, lat_grid = np.meshgrid(glons, glats)
+            use_lons = lon_grid.flatten()
+            use_lats = lat_grid.flatten()
+            use_vals = val_data.flatten()
+
+        # Remove NaN values
+        valid_mask = ~np.isnan(use_vals)
+        if not np.any(valid_mask):
+            return lines
+
+        valid_lons = use_lons[valid_mask]
+        valid_lats = use_lats[valid_mask]
+        valid_vals = use_vals[valid_mask]
+
+        # If storm data exists, use eye and CDO calculation
+        if storm_data is not None:
+            clat = storm_data.get('lat', storm_data.get('latitude', frame_lat))
+            clon = storm_data.get('lon', storm_data.get('longitude', frame_lon))
+            dist = np.sqrt((valid_lons - clon)**2 + (valid_lats - clat)**2)
+
+            # Eye: within EYE_RADIUS_DEG, find maximum temperature
+            eye_mask = dist <= EYE_RADIUS_DEG
+            if np.any(eye_mask):
+                eye_temp = np.max(valid_vals[eye_mask])
+                if include_coords:
+                    eye_idx = np.argmax(valid_vals[eye_mask])
+                    eye_lat = valid_lats[eye_mask][eye_idx]
+                    eye_lon = valid_lons[eye_mask][eye_idx]
+                    lat_dir = 'N' if eye_lat >= 0 else 'S'
+                    lon_dir = 'E' if eye_lon >= 0 else 'W'
+                    lines.append(f"Max Eye Temperature: {eye_temp:.1f}°C ({abs(eye_lat):.1f}{lat_dir}, {abs(eye_lon):.1f}{lon_dir})")
+                else:
+                    lines.append(f"Max Eye Temperature: {eye_temp:.1f}°C")
+
+            # CDO: ring between EYE_RADIUS_DEG and CDO_RADIUS_DEG, find minimum temperature
+            cdo_mask = (dist > EYE_RADIUS_DEG) & (dist <= CDO_RADIUS_DEG)
+            if np.any(cdo_mask):
+                cdo_temp = np.min(valid_vals[cdo_mask])
+                if include_coords:
+                    cdo_idx = np.argmin(valid_vals[cdo_mask])
+                    cdo_lat = valid_lats[cdo_mask][cdo_idx]
+                    cdo_lon = valid_lons[cdo_mask][cdo_idx]
+                    lat_dir = 'N' if cdo_lat >= 0 else 'S'
+                    lon_dir = 'E' if cdo_lon >= 0 else 'W'
+                    lines.append(f"Min CDO Temperature: {cdo_temp:.1f}°C ({abs(cdo_lat):.1f}{lat_dir}, {abs(cdo_lon):.1f}{lon_dir})")
+                else:
+                    lines.append(f"Min CDO Temperature: {cdo_temp:.1f}°C")
+
+        # No storm data - show coldest and warmest in whole image
+        else:
+            # Coldest temperature (minimum)
+            coldest_temp = np.min(valid_vals)
+            if include_coords:
+                coldest_idx = np.argmin(valid_vals)
+                coldest_lat = valid_lats[coldest_idx]
+                coldest_lon = valid_lons[coldest_idx]
+                lat_dir = 'N' if coldest_lat >= 0 else 'S'
+                lon_dir = 'E' if coldest_lon >= 0 else 'W'
+                lines.append(f"Coldest Temperature: {coldest_temp:.1f}°C ({abs(coldest_lat):.1f}{lat_dir}, {abs(coldest_lon):.1f}{lon_dir})")
+            else:
+                lines.append(f"Coldest Temperature: {coldest_temp:.1f}°C")
+
+            # Warmest temperature (maximum)
+            warmest_temp = np.max(valid_vals)
+            if include_coords:
+                warmest_idx = np.argmax(valid_vals)
+                warmest_lat = valid_lats[warmest_idx]
+                warmest_lon = valid_lons[warmest_idx]
+                lat_dir = 'N' if warmest_lat >= 0 else 'S'
+                lon_dir = 'E' if warmest_lon >= 0 else 'W'
+                lines.append(f"Warmest Temperature: {warmest_temp:.1f}°C ({abs(warmest_lat):.1f}{lat_dir}, {abs(warmest_lon):.1f}{lon_dir})")
+            else:
+                lines.append(f"Warmest Temperature: {warmest_temp:.1f}°C")
+
+    except Exception as e:
+        print(f"Temperature stats error: {e}")
+
+    return lines
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HELPER: Get cmap vmin/vmax from cmaps library
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _cmap_to_celsius(vmin, vmax):
+    """Convert Kelvin to Celsius if needed."""
+    if vmin > 200: vmin -= 273.15
+    if vmax > 200: vmax -= 273.15
+    return vmin, vmax
+
+
+def get_cmap_info(selected_cmap_name):
+    """
+    Get the actual colormap, vmin, vmax from the cmaps library.
+    Returns (cmap, vmin, vmax) or (None, None, None) if not found.
+    """
+    try:
+        import cmaps
+        if hasattr(cmaps, selected_cmap_name):
+            func = getattr(cmaps, selected_cmap_name)
+            if callable(func):
+                result = func()
+                if isinstance(result, tuple) and len(result) in (2, 3):
+                    cmap = result[0]
+                    if len(result) == 3:
+                        vmin, vmax = result[1], result[2]
+                    else:
+                        vmin, vmax = -100, 50
+                    vmin, vmax = _cmap_to_celsius(vmin, vmax)
+                    return cmap, vmin, vmax
+    except Exception:
+        pass
+    return None, None, None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ASCAT WIND SUBSAMPLING
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def subsample_barbs_spatially(lons, lats, u_wind, v_wind, wind_speed, spacing_deg=0.3):
+    """Subsample wind barbs to avoid overcrowding."""
+    if len(lons) == 0:
+        return lons, lats, u_wind, v_wind, wind_speed
+
+    lon_min, lon_max = np.min(lons), np.max(lons)
+    lat_min, lat_max = np.min(lats), np.max(lats)
+    n_lon = max(1, int(np.ceil((lon_max - lon_min) / spacing_deg)))
+    n_lat = max(1, int(np.ceil((lat_max - lat_min) / spacing_deg)))
+
+    grid = {}
+    for i in range(len(lons)):
+        ilon = np.clip(int((lons[i] - lon_min) // spacing_deg), 0, n_lon - 1)
+        ilat = np.clip(int((lats[i] - lat_min) // spacing_deg), 0, n_lat - 1)
+        key = (ilon, ilat)
+        grid.setdefault(key, []).append(i)
+
+    kept_indices = np.sort([indices[len(indices)//2]
+                           for indices in grid.values() if indices])
+    return (lons[kept_indices], lats[kept_indices],
+            u_wind[kept_indices], v_wind[kept_indices],
+            wind_speed[kept_indices])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DOWNLOAD BUTTON
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def show_download_button(file_path):
+    """Display a download button for the output file."""
+    if not file_path or not os.path.exists(file_path):
+        return
+
+    file_name = os.path.basename(file_path)
+    file_size = os.path.getsize(file_path)
+
+    print(f"\n{'='*60}\n  ✅ OUTPUT READY: {file_name}  ({file_size/1024:.0f} KB)\n{'='*60}")
+
+    try:
+        with open(file_path, 'rb') as f:
+            data = f.read()
+        b64 = base64.b64encode(data).decode()
+        ext = os.path.splitext(file_path)[1].lower()
+        mime = {'.gif': 'image/gif', '.png': 'image/png',
+                '.jpg': 'image/jpeg', '.mp4': 'video/mp4'}.get(ext, 'image/png')
+
+        display(HTML(f"""
+        <div style="text-align:center;margin:20px 0;">
+          <a href="data:{mime};base64,{b64}" download="{file_name}">
+            <button style="font-size:18px;padding:12px 24px;background:#4CAF50;color:white;
+                           border:none;border-radius:8px;cursor:pointer;
+                           box-shadow:0 2px 4px rgba(0,0,0,0.2)">
+              ⬇️ DOWNLOAD {file_name}
+            </button>
+          </a>
+        </div>"""))
+        print(f"  📁 Path: {os.path.abspath(file_path)}")
+    except Exception as e:
+        print(f"  Download button error: {e}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MAIN PLOT FUNCTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def plot_frame(val_data, dt, satellite, frame_lat, frame_lon, band_num, is_true_color,
+               user_cmap, cmap_vmin, cmap_vmax, selected_cmap_name, output_filename,
+               image_size_tuple, is_wp, is_us_atlantic, is_us_atlantic_h9, is_philippines_view,
+               storm_data, show_storm_details, show_best_track_overlay,
+               is_mesoscale, meso_num, is_target_area, display_seconds,
+               is_mtsat, is_gms, is_viirs, show_min_center_temp, local_scn, band_key, extent,
+               is_gif_frame, frame_label, crop_deg, reader, is_daynight_mode,
+               viirs_band=None, swath_lats=None, swath_lons=None,
+               is_ascat=False, ascat_data=None, ascat_dt=None, sat_actual_dt=None,
+               metop_letter=None, best_track_source_type=None):
+    """
+    Plot a single satellite imagery frame with optional overlays.
+    """
+
+    render_dpi = OUTPUT_DPI
+    frame_pfx = f"[{frame_label}] " if frame_label else ""
+
+    # ── Determine thermal band type ───────────────────────────────────────────
+    if is_viirs and viirs_band:
+        is_thermal = VIIRS_BANDS_INFO.get(viirs_band, {}).get('thermal', True)
+    elif is_gms:
+        is_thermal = True
+    elif is_mtsat:
+        is_thermal = band_num >= 3
+    elif is_eumetsat and 'seviri' in str(reader).lower():
+        is_thermal = band_num >= 4
+    elif is_eumetsat and 'avhrr' in str(reader).lower():
+        is_thermal = band_num >= 4
+    else:
+        is_thermal = band_num >= 7
+
+    # ── Data validation ───────────────────────────────────────────────────────
+    valid_mask = ~np.isnan(val_data)
+    valid_count = np.sum(valid_mask)
+    valid_vals = val_data[valid_mask] if valid_count > 0 else np.array([])
+
+    # ── Colormap & colorbar settings ──────────────────────────────────────────
+    is_gray_cmap = selected_cmap_name.lower() in GRAYSCALE_CMAP_NAMES
+
+    if is_true_color:
+        current_cmap = None
+        vmin = vmax = None
+        plot_sat_cbar = False
+        cbar_label = ""
+    elif is_thermal and is_gray_cmap:
+        current_cmap = plt.get_cmap('gray_r')
+        vmin, vmax = -100.0, 50.0
+        cbar_label = "Brightness Temperature (°C)"
+        plot_sat_cbar = True
+    elif is_thermal:
+        current_cmap = user_cmap
+        if cmap_vmin is not None and cmap_vmax is not None and cmap_vmin != cmap_vmax:
+            vmin, vmax = float(cmap_vmin), float(cmap_vmax)
+        else:
+            _, cmap_vmin_lib, cmap_vmax_lib = get_cmap_info(selected_cmap_name)
+            if cmap_vmin_lib is not None and cmap_vmax_lib is not None:
+                vmin, vmax = cmap_vmin_lib, cmap_vmax_lib
+            else:
+                vmin, vmax = -100.0, 50.0
+        cbar_label = "Brightness Temperature (°C)"
+        plot_sat_cbar = True
+    elif is_daynight_mode and not is_thermal:
+        current_cmap = plt.get_cmap('gray')
+        vmin = np.percentile(valid_vals, 2) if len(valid_vals) > 0 else 0
+        vmax = np.percentile(valid_vals, 98) if len(valid_vals) > 0 else 1
+        if vmin >= vmax: vmin = vmax - 0.1
+        cbar_label = "Reflectance"
+        plot_sat_cbar = False
+    else:
+        current_cmap = plt.get_cmap('gray')
+        if len(valid_vals) > 0:
+            if np.max(valid_vals) > 1.5:
+                val_data = val_data / 100.0
+                valid_vals = val_data[~np.isnan(val_data)]
+            val_data = np.clip(val_data, 0, 1)
+            vmin = np.percentile(valid_vals, 1)
+            vmax = np.percentile(valid_vals, 99)
+            if vmax - vmin < 0.1: vmin, vmax = 0, 1
+        else:
+            vmin, vmax = 0, 1
+        cbar_label = "Reflectance (%)"
+        plot_sat_cbar = False
+
+    if is_ascat:
+        plot_sat_cbar = False
+
+    # ── Fix inverted vmin/vmax for plotting ───────────────────────────────────
+    plot_vmin = min(vmin, vmax) if vmin is not None else None
+    plot_vmax = max(vmin, vmax) if vmax is not None else None
+
+    # ── Figure setup ──────────────────────────────────────────────────────────
+    fw = image_size_tuple[0] / render_dpi
+    fh = image_size_tuple[1] / render_dpi
+    fig = plt.figure(figsize=(fw, fh), dpi=render_dpi, facecolor=BG_COLOR)
+
+    if is_ascat and ascat_data and ascat_data['total_vectors'] > 0:
+        map_width = 1.0 - LEFT_MARGIN - RIGHT_MARGIN - 0.065
+    else:
+        map_width = 1.0 - LEFT_MARGIN - RIGHT_MARGIN
+        if plot_sat_cbar:
+            map_width -= (COLORBAR_WIDTH + COLORBAR_PAD)
+
+    proj = ccrs.PlateCarree()
+    ax = fig.add_axes([LEFT_MARGIN, BOTTOM_MARGIN, map_width,
+                       1.0 - TOP_MARGIN - BOTTOM_MARGIN], projection=proj)
+    img_ext = [extent[0], extent[2], extent[1], extent[3]]
+
+    # ── Plot satellite data ───────────────────────────────────────────────────
+    im = None
+    if is_true_color and val_data.ndim == 3:
+        im = ax.imshow(val_data, origin='upper', extent=img_ext,
+                      transform=ccrs.PlateCarree())
+    elif is_viirs and swath_lats is not None and swath_lons is not None:
+        masked_data = np.ma.masked_where(np.isnan(val_data), val_data)
+        im = ax.pcolormesh(swath_lons, swath_lats, masked_data,
+                          cmap=current_cmap, vmin=plot_vmin, vmax=plot_vmax,
+                          shading='auto', transform=ccrs.PlateCarree(), zorder=0)
+    else:
+        display_data = val_data.copy()
+        if np.all(np.isnan(display_data)):
+            display_data = np.zeros_like(display_data)
+            if is_thermal: display_data.fill(-50)
+        im = ax.imshow(display_data, cmap=current_cmap, vmin=plot_vmin, vmax=plot_vmax,
+                      origin='upper', extent=img_ext, transform=ccrs.PlateCarree(), zorder=0)
+
+    # ── Map features ──────────────────────────────────────────────────────────
+    ax.add_feature(cf.BORDERS.with_scale('10m'), linewidth=1,
+                   edgecolor=BORDER_COLOR, zorder=2)
+    ax.add_feature(cf.COASTLINE.with_scale('10m'), linewidth=1,
+                   edgecolor=BORDER_COLOR, zorder=2)
+    if is_us_atlantic or is_us_atlantic_h9 or "goes" in str(satellite).lower():
+        ax.add_feature(cf.STATES.with_scale('10m'), linewidth=1,
+                       edgecolor=BORDER_COLOR, alpha=0.7, zorder=2)
+    ax.set_extent(img_ext, crs=ccrs.PlateCarree())
+
+    # ── ASCAT Wind Barbs ──────────────────────────────────────────────────────
+    if is_ascat and ascat_data and ascat_data['total_vectors'] > 0:
+        mask = ((ascat_data['lons'] >= extent[0]) & (ascat_data['lons'] <= extent[2]) &
+                (ascat_data['lats'] >= extent[1]) & (ascat_data['lats'] <= extent[3]))
+        r_lons = ascat_data['lons'][mask]
+        r_lats = ascat_data['lats'][mask]
+        r_u = ascat_data['u_wind'][mask]
+        r_v = ascat_data['v_wind'][mask]
+        wind_knots = ascat_data['wind_speed'][mask] * 1.94384
+
+        if len(r_lons) > 0:
+            sl, sla, su, sv, sw = subsample_barbs_spatially(
+                r_lons, r_lats, r_u, r_v, wind_knots, ASCAT_BARB_SUBSAMPLE_SPACING)
+        else:
+            sl, sla, su, sv, sw = r_lons, r_lats, r_u, r_v, wind_knots
+
+        if len(sl) > 0:
+            import cmaps
+            wr = cmaps.wind()
+            wind_cmap = (wr[0].reversed() if isinstance(wr, tuple)
+                        else (wr.reversed() if hasattr(wr, 'reversed')
+                             else plt.cm.get_cmap('RdYlBu_r')))
+            wind_norm = mcolors.Normalize(vmin=ASCAT_CBAR_VMIN, vmax=ASCAT_CBAR_VMAX)
+            bin_edges = np.linspace(ASCAT_CBAR_VMIN, ASCAT_CBAR_VMAX, 11)
+
+            for i in range(10):
+                mb = (sw >= bin_edges[i]) & (sw < bin_edges[i+1])
+                if np.any(mb):
+                    color = wind_cmap(wind_norm((bin_edges[i] + bin_edges[i+1]) / 2))
+                    ax.barbs(sl[mb], sla[mb], su[mb], sv[mb],
+                            length=ASCAT_BARB_LENGTH, linewidth=ASCAT_BARB_LINEWIDTH,
+                            barbcolor=color, flagcolor=color, flip_barb=True,
+                            transform=ccrs.PlateCarree(), zorder=15, alpha=ASCAT_BARB_ALPHA)
+
+            max_wind = np.max(sw) if len(sw) > 0 else 0
+            ax.legend(handles=[mpatches.Patch(color='none',
+                     label=f"Maximum Wind: {max_wind:.1f} kt")],
+                     loc='upper right', fontsize=11, framealpha=0.8,
+                     facecolor=ASCAT_LEGEND_BG, edgecolor=ASCAT_LEGEND_EDGE,
+                     labelcolor=TEXT_COLOR, handlelength=0, handletextpad=0).set_zorder(20)
+
+            wind_sm = plt.cm.ScalarMappable(cmap=wind_cmap, norm=wind_norm)
+            wind_sm.set_array([])
+            wind_cax = make_axes_locatable(ax).append_axes("right", size="2%",
+                                            pad=0.12, axes_class=plt.Axes)
+            wind_cbar = plt.colorbar(wind_sm, cax=wind_cax, extend='max')
+            wind_cbar.set_label('Wind Speed (knots)', color=TEXT_COLOR, fontsize=CBAR_LABEL_SIZE)
+            wind_cbar.ax.yaxis.set_tick_params(color=TEXT_COLOR, labelcolor=TEXT_COLOR,
+                                                labelsize=CBAR_TICK_SIZE)
+            wind_cbar.set_ticks(np.arange(ASCAT_CBAR_VMIN, ASCAT_CBAR_VMAX + 1, ASCAT_CBAR_STEP))
+            wind_cbar.outline.set_edgecolor(MAP_FRAME_COLOR)
+            wind_cbar.outline.set_linewidth(1.1)
+
+    # ── Best track overlay ────────────────────────────────────────────────────
+    if show_storm_details and storm_data and show_best_track_overlay:
+        _bt = []
+        _basin = storm_data.get('basin', '').upper()
+        _snum = storm_data.get('storm_num', storm_data.get('number', ''))
+        _year = storm_data.get('year', dt.year)
+
+        if not _snum:
+            atcf = storm_data.get('atcf_id', '')
+            if len(atcf) >= 6:
+                _snum = atcf[2:4]
+                _basin = atcf[:2]
+                try: _year = int(atcf[4:8])
+                except: pass
+
+        if _basin and _snum:
+            try:
+                _bt = fetch_best_track_data('temp', {
+                    'year': _year,
+                    'storm_num': str(_snum).zfill(2),
+                    'basin': _basin.lower()
+                })
+            except: pass
+
+        if _bt:
+            bx = [p['lon'] for p in _bt]
+            by = [p['lat'] for p in _bt]
+            ax.plot(bx, by, '-', color='yellow', linewidth=1.5,
+                   transform=ccrs.PlateCarree(), alpha=0.85, zorder=5)
+            past = [p for p in _bt if p['dt'] <= dt]
+            if past:
+                ax.plot([p['lon'] for p in past], [p['lat'] for p in past], '-',
+                       color='white', linewidth=2.0, transform=ccrs.PlateCarree(),
+                       alpha=0.9, zorder=6)
+
+    # ── Gridlines ─────────────────────────────────────────────────────────────
+    gl = ax.gridlines(draw_labels=True, linewidth=1, color=GRID_COLOR,
+                      alpha=0.6, linestyle='--',
+                      xlocs=ticker.MaxNLocator(nbins=6),
+                      ylocs=ticker.MaxNLocator(nbins=6))
+    gl.top_labels = gl.right_labels = False
+    gl.xformatter = LongitudeFormatter(zero_direction_label=True)
+    gl.yformatter = LatitudeFormatter()
+    gl.xlabel_style = {'size': GRID_LABEL_SIZE, 'color': TEXT_COLOR}
+    gl.ylabel_style = {'size': GRID_LABEL_SIZE, 'color': TEXT_COLOR}
+
+    # ── Map text box overlay ──────────────────────────────────────────────────
+    if SHOW_MAP_TEXT_BOX:
+        text = (build_map_text(storm_data, best_track_source_type, frame_lat, frame_lon)
+                if storm_data else (MAP_TEXT_BOX_CUSTOM_TEXT or ""))
+        if text and not is_ascat:
+            ax.text(MAP_TEXT_BOX_X, MAP_TEXT_BOX_Y, text, transform=ax.transAxes,
+                    fontsize=MAP_TEXT_BOX_FONT_SIZE,
+                    fontweight=MAP_TEXT_BOX_FONT_WEIGHT,
+                    verticalalignment='bottom', horizontalalignment='left',
+                    bbox=dict(boxstyle='square', facecolor=MAP_TEXT_BOX_BG_COLOR,
+                             alpha=MAP_TEXT_BOX_BG_OPACITY,
+                             edgecolor=MAP_TEXT_BOX_OUTLINE_COLOR,
+                             linewidth=MAP_TEXT_BOX_OUTLINE_WIDTH),
+                    color=MAP_TEXT_BOX_TEXT_COLOR)
+
+    # ── Satellite colorbar ────────────────────────────────────────────────────
+    if plot_sat_cbar and not is_true_color and not is_ascat and im is not None:
+        cax = make_axes_locatable(ax).append_axes("right", size="2%",
+                                                    pad=CBAR_PAD_FRACTION,
+                                                    axes_class=plt.Axes)
+
+        inverted = vmin is not None and vmax is not None and vmin > vmax
+        true_min = min(plot_vmin, plot_vmax)
+        true_max = max(plot_vmin, plot_vmax)
+
+        norm = mcolors.Normalize(vmin=true_min, vmax=true_max)
+        sm = plt.cm.ScalarMappable(cmap=current_cmap, norm=norm)
+        sm.set_array([])
+
+        cbar = plt.colorbar(sm, cax=cax, extend='neither')
+        cbar.set_label(cbar_label, color=TEXT_COLOR, fontsize=CBAR_LABEL_SIZE)
+        cbar.ax.yaxis.set_tick_params(color=TEXT_COLOR, labelcolor=TEXT_COLOR,
+                                       labelsize=CBAR_TICK_SIZE)
+
+        if is_thermal:
+            tick_min = np.ceil(true_min / 10) * 10
+            tick_max = np.floor(true_max / 10) * 10
+
+            ticks = []
+            if true_min < tick_min:
+                ticks.append(true_min)
+            if tick_min <= tick_max:
+                ticks.extend(np.arange(tick_min, tick_max + 1, 10))
+            if true_max > tick_max:
+                ticks.append(true_max)
+            if len(ticks) < 2:
+                ticks = [true_min, true_max]
+
+            ticks = np.array(ticks)
+            if inverted:
+                ticks = ticks[::-1]
+
+            cbar.set_ticks(ticks)
+            cbar.set_ticklabels([f'{int(t)}°C' for t in ticks])
+            cbar.ax.set_ylim(true_min, true_max)
+
+        cbar.outline.set_edgecolor(MAP_FRAME_COLOR)
+        cbar.outline.set_linewidth(1.1)
+
+    for spine in ax.spines.values():
+        spine.set_edgecolor(MAP_FRAME_COLOR)
+        spine.set_linewidth(1.1)
+    ax.tick_params(colors=TEXT_COLOR)
+
+    # ── Build left title ──────────────────────────────────────────────────────
+    sat_name = SAT_NAME_MAP.get(str(satellite), str(satellite) if satellite else "Satellite")
+
+    if is_ascat and ascat_dt is not None and sat_actual_dt is not None:
+        show_secs = display_seconds or is_gif_frame
+        time_fmt = '%H:%M:%S' if show_secs else '%H:%M'
+        title_main = f"MetOp-{metop_letter} ASCAT Wind Observation" if metop_letter \
+                     else "MetOp ASCAT Wind Observation"
+        title_sub = (f"{ascat_dt.strftime(f'%Y-%m-%d {time_fmt} UTC')} • "
+                    f"{sat_name} at {sat_actual_dt.strftime(f'%Y-%m-%d {time_fmt}')}")
+        left_title_lines = [title_main, title_sub]
+    else:
+        area_label = None
+        if is_mesoscale: area_label = f"Meso-{meso_num}"
+        elif is_target_area: area_label = "Target"
+        elif is_wp: area_label = "W. Pacific"
+        elif is_us_atlantic or is_us_atlantic_h9: area_label = "US Atlantic"
+        elif is_philippines_view: area_label = "Philippines"
+
+        sat_name_full = f"{sat_name} {area_label}" if area_label else sat_name
+        band_title = get_band_title(satellite, reader, band_num, is_viirs,
+                                    viirs_band, is_gms, is_mtsat, is_eumetsat)
+
+        if is_daynight_mode:
+            title_main = f"{sat_name_full} Visible [Day] / Shortwave IR [Night]"
+        elif is_true_color:
+            title_main = f"{sat_name} True Color RGB"
+        else:
+            title_main = f"{sat_name_full} {band_title}"
+
+        show_secs = display_seconds or is_gif_frame or is_target_area or is_mesoscale
+        time_str = (f"Satellite imagery: {dt.strftime('%Y-%m-%d')} at "
+                   f"{dt.strftime('%H:%M:%S' if show_secs else '%H:%M')} UTC")
+        left_title_lines = [title_main, time_str]
+
+    # ── Temperature stats (UNIVERSAL - works with or without storm data) ──────
+    if is_thermal and not is_daynight_mode and not is_true_color and not is_ascat:
+        if show_min_center_temp:
+            # Ask user if they want coordinates included
+            include_coords = _input("Include temperature coordinates? (y/n, default n): ", "n").lower() == 'y'
+            temp_lines = get_temperature_stats(val_data, extent, storm_data, is_viirs,
+                                               swath_lats, swath_lons, frame_lat, frame_lon, include_coords)
+            left_title_lines.extend(temp_lines)
+
+    left_title = '\n'.join(left_title_lines)
+
+    # ── Build right title (credits + storm label) ─────────────────────────────
+    hide_adrian = (str(satellite).startswith('MTSAT') or
+                   str(satellite).startswith('GMS') or
+                   str(satellite).startswith('Meteosat') or
+                   str(satellite) in ['NPP', 'NOAA-20', 'NOAA-21'])
+    credits = ("Althea Kate (@thea_girl)" if hide_adrian
+               else "Althea Kate (@thea_girl) • Adrian (@adrian_kcl)")
+
+    storm_label = (build_storm_label(storm_data, best_track_source_type)
+                   if (show_storm_details and storm_data) else None)
+
+    right_title_lines = []
+    if storm_label:
+        right_title_lines.append(storm_label)
+    right_title_lines.append(credits)
+
+    right_title = '\n'.join(right_title_lines)
+
+    # ── Set titles using ax.set_title (LEFT and RIGHT) ────────────────────────
+    ax.set_title(left_title, loc='left',
+                 fontsize=LEFT_FONT_SIZE, fontweight='bold' if LEFT_BOLD else 'normal',
+                 color=TEXT_COLOR, pad=7)
+
+    ax.set_title(right_title, loc='right',
+                 fontsize=RIGHT_FONT_SIZE, fontweight='bold' if RIGHT_BOLD else 'normal',
+                 color=TEXT_COLOR, pad=7)
+
+    # ── Save output ───────────────────────────────────────────────────────────
+    plt.savefig(output_filename, dpi=render_dpi, facecolor=BG_COLOR,
+                bbox_inches='tight',
+                pad_inches=0.05 + max(LABEL_PAD_TOP, LABEL_PAD_BOTTOM,
+                                     LABEL_PAD_LEFT, LABEL_PAD_RIGHT))
+
+    if any(p > 0 for p in [LABEL_PAD_TOP, LABEL_PAD_BOTTOM,
+                            LABEL_PAD_LEFT, LABEL_PAD_RIGHT]):
+        img = Image.open(output_filename)
+        pw, ph = img.size
+        et = int(LABEL_PAD_TOP * render_dpi)
+        eb = int(LABEL_PAD_BOTTOM * render_dpi)
+        el = int(LABEL_PAD_LEFT * render_dpi)
+        er = int(LABEL_PAD_RIGHT * render_dpi)
+        canvas = Image.new(img.mode, (pw + el + er, ph + et + eb),
+                          tuple(BG_RGB) if img.mode == 'RGB' else (*BG_RGB, 255))
+        canvas.paste(img, (el, et))
+        canvas.save(output_filename, format='PNG')
+
+    print(f"  {frame_pfx}→ {output_filename}")
+    plt.close(fig)
+    gc.collect()
+    return output_filename
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ANIMATION ASSEMBLY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def build_animation(frame_paths, output_path, fmt, speed_ms):
+    """Assemble frames into an animated GIF or MP4."""
+    print(f"\n  Assembling {fmt.upper()} from {len(frame_paths)} frames...")
+
+    frames = [imageio.imread(p) for p in frame_paths]
+
+    sizes = Counter([f.shape[:2] for f in frames])
+    target_size = sizes.most_common(1)[0][0]
+    print(f"  Target size: {target_size[1]}x{target_size[0]} (most common)")
+
+    resized_frames = []
+    for f in frames:
+        if f.shape[:2] != target_size:
+            pil_img = Image.fromarray(f).resize((target_size[1], target_size[0]),
+                                                 Image.LANCZOS)
+            resized_frames.append(np.array(pil_img))
+        else:
+            resized_frames.append(f)
+
+    if fmt == 'gif':
+        imageio.mimwrite(output_path, resized_frames,
+                        duration=speed_ms / 1000.0, loop=0)
+    elif fmt == 'mp4':
+        fps = max(1, int(1000 / speed_ms))
+        with imageio.get_writer(output_path, fps=fps, codec='libx264',
+                                quality=8) as writer:
+            for img in resized_frames:
+                writer.append_data(img)
+
+    print(f"  Animation saved: {output_path}")
+    return output_path
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXECUTION
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _input(prompt, default=""):
+    val = input(prompt).strip()
+    return val if val else default
+
+# Ensure all Part 1 variables exist
+if 'is_ascat' not in dir(): is_ascat = False
+if 'ascat_data' not in dir(): ascat_data = None
+if 'ascat_dt' not in dir(): ascat_dt = None
+if 'sat_actual_dt' not in dir(): sat_actual_dt = None
+if 'ascat_letter' not in dir(): ascat_letter = None
+if 'best_track_source_type' not in dir(): best_track_source_type = None
+
+# Build filename
+if is_ascat and ascat_dt is not None and sat_actual_dt is not None:
+    ascat_time_tag = ascat_dt.strftime('%Y-%m-%d_%H-%M-%S')
+    base_name = f"ASCAT_MetOp-{ascat_letter}_{satellite}_{ascat_time_tag}UTC"
+else:
+    time_tag = target_dt.strftime('%Y-%m-%d_%H-%M-%S')
+    meso_tag = f"_M{_meso_num}" if '_is_mesoscale' in dir() and _is_mesoscale else ""
+    viirs_tag = f"_{viirs_band}" if 'is_viirs' in dir() and is_viirs else ""
+    base_name = f"{satellite}{meso_tag}{viirs_tag}_{band_fmt}_{time_tag}UTC"
+
+# Build kwargs dict
+_plot_kwargs = dict(
+    satellite=satellite, band_num=band_num, is_true_color=is_tc,
+    user_cmap=user_cmap, cmap_vmin=cmap_vmin, cmap_vmax=cmap_vmax,
+    selected_cmap_name=selected_cmap, image_size_tuple=final_image_size,
+    is_wp=_is_wp if '_is_wp' in dir() else False,
+    is_us_atlantic=_is_us if '_is_us' in dir() else False,
+    is_us_atlantic_h9=_is_us_h9 if '_is_us_h9' in dir() else False,
+    is_philippines_view=_is_ph if '_is_ph' in dir() else False,
+    storm_data=storm_data,
+    show_storm_details=show_storm_details if 'show_storm_details' in dir() else False,
+    show_best_track_overlay=show_best_track_overlay if 'show_best_track_overlay' in dir() else False,
+    is_mesoscale=_is_mesoscale if '_is_mesoscale' in dir() else False,
+    meso_num=_meso_num if '_meso_num' in dir() else 1,
+    is_target_area=_is_target_area if '_is_target_area' in dir() else False,
+    display_seconds=_disp_seconds if '_disp_seconds' in dir() else False,
+    is_mtsat=is_mtsat, is_gms=is_gms, is_viirs=is_viirs,
+    show_min_center_temp=show_min_center_temp if 'show_min_center_temp' in dir() else False,
+    crop_deg=crop_deg if 'crop_deg' in dir() else 5.0,
+    reader=reader, is_daynight_mode=is_daynight_mode if 'is_daynight_mode' in dir() else False,
+    viirs_band=viirs_band if 'is_viirs' in dir() and is_viirs else None,
+    swath_lats=viirs_lats if 'is_viirs' in dir() and is_viirs else None,
+    swath_lons=viirs_lons if 'is_viirs' in dir() and is_viirs else None,
+    is_ascat=is_ascat, ascat_data=ascat_data if is_ascat else None,
+    ascat_dt=ascat_dt if is_ascat else None, sat_actual_dt=sat_actual_dt if is_ascat else None,
+    metop_letter=ascat_letter if is_ascat else None,
+    best_track_source_type=best_track_source_type if 'best_track_source_type' in dir() else None,
+)
+
+# ── Render single frame or animation ──────────────────────────────────────────
+if not do_animation:
+    out_path = plot_frame(
+        val_data=val_data, dt=target_dt, frame_lat=lat, frame_lon=lon,
+        output_filename=f"{base_name}.png",
+        local_scn=local_scn, band_key=band_key, extent=extent,
+        is_gif_frame=False, frame_label="", **_plot_kwargs)
+
+    if out_path:
+        display(IPImage(filename=out_path))
+        show_download_button(out_path)
+    else:
+        print("Plotting failed.")
+else:
+    ANIM_FRAME_DIR = '/content/_anim_frames'
+    os.makedirs(ANIM_FRAME_DIR, exist_ok=True)
+    frame_paths = []
+
+    for i, frame in enumerate(anim_frames):
+        frame_band_num = band_num
+        frame_band_fmt = band_fmt
+        frame_viirs_band = viirs_band if 'is_viirs' in dir() and is_viirs else None
+
+        if band_mode == "2":
+            z = calculate_solar_zenith(frame['lat'], frame['lon'], frame['dt'])
+            if is_viirs:
+                frame_viirs_band = "I01" if z < 90 else "I05"
+                frame_band_num = 5 if z >= 90 else 1
+                frame_band_fmt = frame_viirs_band
+            elif is_gms:
+                frame_band_num = 4
+            elif is_eumetsat:
+                frame_band_num = 1 if z < 90 else 9
+            elif is_mtsat:
+                frame_band_num = 1 if z < 90 else 4
+            else:
+                frame_band_num = 3 if z < 90 else 13
+
+            if not is_viirs:
+                frame_band_fmt = f"B{frame_band_num:02d}"
+
+        fname = os.path.join(ANIM_FRAME_DIR, f"frame_{i:04d}.png")
+        frame_kwargs = dict(_plot_kwargs)
+        frame_kwargs.update(
+            storm_data=frame.get('storm_data'),
+            band_num=frame_band_num,
+            viirs_band=frame_viirs_band,
+            is_true_color=frame.get('is_tc', False),
+            swath_lats=frame.get('swath_lats'),
+            swath_lons=frame.get('swath_lons'),
+        )
+
+        result = plot_frame(
+            val_data=frame['val_data'], dt=frame['dt'],
+            frame_lat=frame['lat'], frame_lon=frame['lon'],
+            output_filename=fname,
+            local_scn=frame['local_scn'], band_key=frame['band_key'],
+            extent=frame['extent'],
+            is_gif_frame=True,
+            frame_label=f"{i+1}/{len(anim_frames)}",
+            **frame_kwargs)
+
+        if result:
+            frame_paths.append(fname)
+
+    if frame_paths:
+        anim_tag = (anim_frames[0]['dt'].strftime('%Y%m%d%H%M') + "-"
+                   + anim_frames[-1]['dt'].strftime('%Y%m%d%H%M'))
+        anim_out = f"{satellite}{meso_tag}{viirs_tag}_{band_fmt}_{anim_tag}UTC.{anim_format}"
+        build_animation(frame_paths, anim_out, anim_format, anim_speed_ms)
+
+        for fp in frame_paths:
+            try: os.remove(fp)
+            except: pass
+        try: os.rmdir(ANIM_FRAME_DIR)
+        except: pass
+
+        show_download_button(anim_out)
+        if anim_format == 'gif':
+            display(IPImage(filename=anim_out))
+        else:
+            print("MP4 ready — use the download button above to save it.")
+    else:
+        print("No frames rendered. Animation failed.")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UNIFIED TROPICAL CYCLONE TRACK PLOTTER — PURE MAP LAYOUT
+# Sources: IBTrACS | EIBTrACS (Invest) | JTWC Best Track
+# Credit: Althea Kate (@thea_girl)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import subprocess, sys, importlib
+
+def install_and_import(pkg, imp=None):
+    imp = imp or pkg.replace('-','_').replace('.','_')
+    try:
+        importlib.import_module(imp)
+    except ImportError:
+        try:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "--quiet"])
+        except:
+            pass
+
+for pkg, imp in {
+    'numpy':'numpy', 'matplotlib':'matplotlib', 'requests':'requests',
+    'cartopy':'cartopy', 'pandas':'pandas', 'ipywidgets':'ipywidgets',
+    'ipython':'IPython', 'scipy':'scipy', 'Pillow':'PIL'
+}.items():
+    install_and_import(pkg, imp)
+
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import matplotlib.ticker as ticker
+import matplotlib.lines as mlines
+import cartopy.crs as ccrs
+import cartopy.feature as cf
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+import requests, datetime, re, zipfile, io, os
+import pandas as pd
+import ipywidgets as widgets
+from IPython.display import display, clear_output, Image as IPImage
+import warnings
+warnings.filterwarnings("ignore")
+
+print("All imports ready.")
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# APPEARANCE SETTINGS
+# ═══════════════════════════════════════════════════════════════════════════════
+OUTPUT_DPI          = 114
+GRID_LABEL_SIZE     = 12
+TEXT_SIZE           = 12
+
+BG_COLOR        = 'black'
+TEXT_COLOR      = 'white'
+GRID_COLOR      = '#888888'
+OCEAN_COLOR     = '#000000'
+LAND_COLOR      = '#1c1c1c'
+
+MARKER_SIZE     = 6.5
+TRACK_LINEWIDTH = 1.2
+FEATURE_LINEWIDTH = 0.8
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STORM TYPE → MARKER MAPPING (Triangle=Non-TC, Circle=TC, Square=Sub-TC)
+# ═══════════════════════════════════════════════════════════════════════════════
+STORM_TYPE_MARKER = {
+    'DS': '^', 'TD': '^', 'DB': '^', 'WV': '^', 'LO': '^',
+    'TS': 'o', 'TY': 'o', 'HU': 'o', 'ST': 'o', 'NR': 'o', 'MX': 'o',
+    'ET': 's', 'SS': 's', 'EX': 's', 'SD': 's',
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CATEGORY DEFINITIONS — TD on colorbar
+# ═══════════════════════════════════════════════════════════════════════════════
+SSHWS_COLORS = {
+    'Sub-TC': '#6EC2EB',
+    'TD':     '#5BCCFA',
+    'TS':     '#4CFFFF',
+    'C1':     '#FFFFDA',
+    'C2':     '#FFDA8D',
+    'C3':     '#FF9F58',
+    'C4':     '#FF748B',
+    'C5':     '#A289FC',
+}
+
+CBAR_COLORS = ['#5BCCFA', '#4CFFFF', '#FFFFDA', '#FFDA8D', '#FF9F58', '#FF748B', '#A289FC']
+CBAR_BOUNDS = [25, 34, 64, 83, 96, 113, 137, 220]
+CBAR_LABELS = ['TD', 'TS', 'C1', 'C2', 'C3', 'C4', 'C5']
+
+def get_sshws_category(wind_kt):
+    if wind_kt < 25:  return 'Sub-TC'
+    if wind_kt < 34:  return 'TD'
+    if wind_kt < 64:  return 'TS'
+    if wind_kt < 83:  return 'C1'
+    if wind_kt < 96:  return 'C2'
+    if wind_kt < 113: return 'C3'
+    if wind_kt < 137: return 'C4'
+    return 'C5'
+
+def get_marker(storm_type):
+    return STORM_TYPE_MARKER.get(storm_type, 'o')
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ACE CALCULATION
+# ═══════════════════════════════════════════════════════════════════════════════
+def calculate_ace(track_df):
+    df = track_df.copy().sort_values('dt')
+    df['wind_sq'] = df['wind_kt'] ** 2
+    ace_units = 0.0
+    for i in range(len(df) - 1):
+        if df.iloc[i]['wind_kt'] >= 34:
+            dt_hours = (df.iloc[i+1]['dt'] - df.iloc[i]['dt']).total_seconds() / 3600.0
+            avg_wind_sq = (df.iloc[i]['wind_sq'] + df.iloc[i+1]['wind_sq']) / 2
+            ace_units += avg_wind_sq * dt_hours / 10000.0 / 6.0
+    return ace_units
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IDL FIX — 0-360 domain, unwrap jumps
+# ═══════════════════════════════════════════════════════════════════════════════
+def fix_idl(track_data):
+    if not track_data:
+        return track_data
+
+    df = pd.DataFrame(track_data).sort_values('dt').reset_index(drop=True)
+    lons = df['lon'].values.copy()
+
+    # Shift to 0-360
+    for i in range(len(lons)):
+        if lons[i] < 0:
+            lons[i] += 360
+
+    # Unwrap jumps > 180°
+    for i in range(1, len(lons)):
+        diff = lons[i] - lons[i-1]
+        if diff > 180:
+            lons[i] -= 360
+        elif diff < -180:
+            lons[i] += 360
+
+    df['lon_plot'] = lons
+    return df.to_dict('records')
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DYNAMIC GRID INTERVAL — sensible steps, won't hit 1° until span < 2°
+# ═══════════════════════════════════════════════════════════════════════════════
+def get_grid_interval(span_deg):
+    if span_deg > 150: return 30
+    if span_deg > 80:  return 20
+    if span_deg > 40:  return 10
+    if span_deg > 20:  return 5
+    if span_deg > 10:  return 5
+    if span_deg > 5:   return 2
+    if span_deg > 2:   return 1
+    return 0.5
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PARSER
+# ═══════════════════════════════════════════════════════════════════════════════
+def _parse_atcf_line(line):
+    parts = [p.strip() for p in line.strip().split(',')]
+    if len(parts) < 10:
+        if len(parts) < 7:
+            return None
+        basin = parts[0] if parts[0] else 'WP'
+        num = parts[1].zfill(2) if parts[1] else '01'
+        date_str = parts[2].strip()
+        if len(date_str) < 10:
+            return None
+        try:
+            dt = datetime.datetime(int(date_str[:4]), int(date_str[4:6]),
+                                   int(date_str[6:8]), int(date_str[8:10]))
+        except:
+            return None
+        lat = lon = None
+        wind = 0
+        for p in parts:
+            p = p.strip()
+            if p and ('N' in p or 'S' in p) and lat is None:
+                try:    lat = float(p[:-1]) / 10.0 * (1 if 'N' in p else -1)
+                except: pass
+            elif p and ('E' in p or 'W' in p) and lon is None:
+                try:    lon = float(p[:-1]) / 10.0 * (1 if 'E' in p else -1)
+                except: pass
+            elif p and p.replace('-','').isdigit() and lat is not None and lon is not None:
+                wind = int(p)
+                break
+        if lat is None or lon is None:
+            return None
+        return {'dt': dt, 'lat': lat, 'lon': lon, 'wind_kt': wind, 'pressure': 0,
+                'name': f"{basin}{num}", 'storm_id': f"{basin}{num}", 'storm_type': 'TS'}
+    if len(parts) < 28:
+        return None
+    basin, num, date_str = parts[0], parts[1], parts[2]
+    if len(date_str) < 10:
+        return None
+    dt = datetime.datetime(int(date_str[:4]), int(date_str[4:6]),
+                           int(date_str[6:8]), int(date_str[8:10]))
+    lat_s, lon_s = parts[6], parts[7]
+    try:
+        lat = float(lat_s[:-1]) / 10.0 * (1 if lat_s.endswith('N') else -1)
+        lon = float(lon_s[:-1]) / 10.0 * (1 if lon_s.endswith('E') else -1)
+    except:
+        return None
+    wind = int(parts[8]) if parts[8] else 0
+    pressure = int(parts[9]) if parts[9] else 0
+
+    storm_type = 'TS'
+    if len(parts) > 11:
+        type_code = parts[11].strip()
+        if type_code in STORM_TYPE_MARKER:
+            storm_type = type_code
+
+    name = parts[27] if len(parts) > 27 else ""
+    storm_id = f"{basin}{num}"
+    if not name or re.match(r'^[A-Z]{2}\d{2,4}$', name):
+        name = storm_id
+    return {'dt': dt, 'lat': lat, 'lon': lon, 'wind_kt': wind, 'pressure': pressure,
+            'name': name, 'storm_id': storm_id, 'basin': basin, 'storm_type': storm_type}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATA SOURCE: JTWC
+# ═══════════════════════════════════════════════════════════════════════════════
+def fetch_jtwc_best_track(year, storm_num, basin='WP'):
+    url = f"https://www.metoc.navy.mil/jtwc/products/best-tracks/{year}/{year}s-bwp/bwp{year}.zip"
+    print(f"  Fetching JTWC: {url}")
+    data = []
+    try:
+        r = requests.get(url, timeout=30)
+        if r.status_code == 200:
+            zf = zipfile.ZipFile(io.BytesIO(r.content))
+            possible = [
+                f"bwp{storm_num}{year}.dat", f"bwp{storm_num}{year}.txt",
+                f"b{basin.lower()}{storm_num}{year}.dat",
+                f"b{basin.lower()}{storm_num}{year}.txt"
+            ]
+            found = None
+            for nm in possible:
+                if nm in zf.namelist():
+                    found = nm
+                    break
+            if not found:
+                for nm in zf.namelist():
+                    if storm_num in nm and nm.endswith(('.dat', '.txt')):
+                        found = nm
+                        break
+            if found:
+                for line in zf.open(found).read().decode().strip().split('\n'):
+                    if line.strip() and not line.startswith('#'):
+                        pt = _parse_atcf_line(line)
+                        if pt:
+                            data.append(pt)
+                data.sort(key=lambda x: x['dt'])
+                print(f"  Loaded {len(data)} points")
+            else:
+                print(f"  Storm {storm_num} not found in archive")
+        else:
+            print(f"  HTTP {r.status_code}")
+    except Exception as e:
+        print(f"  Error: {e}")
+    return data
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATA SOURCE: IBTrACS
+# ═══════════════════════════════════════════════════════════════════════════════
+IBTRACS_URL = (
+    "https://www.ncei.noaa.gov/data/"
+    "international-best-track-archive-for-climate-stewardship-ibtracs/"
+    "v04r01/access/csv/ibtracs.ALL.list.v04r01.csv"
+)
+
+_ibtracs_df_cache = None
+
+def load_ibtracs():
+    global _ibtracs_df_cache
+    if _ibtracs_df_cache is not None:
+        return _ibtracs_df_cache
+    print("  Downloading IBTrACS dataset...")
+    response = requests.get(IBTRACS_URL)
+    response.raise_for_status()
+    df = pd.read_csv(io.BytesIO(response.content), low_memory=False, skiprows=[1])
+    for col in ["SEASON", "LAT", "LON", "USA_WIND", "USA_PRES"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    if "NAME" in df.columns:
+        df["NAME"] = df["NAME"].fillna("UNNAMED")
+    _ibtracs_df_cache = df
+    print(f"  IBTrACS loaded: {len(df):,} rows")
+    return df
+
+def search_ibtracs(query, year=None):
+    df = load_ibtracs()
+    query = str(query).strip().upper()
+    if not query:
+        return pd.DataFrame()
+    name_mask = df["NAME"].astype(str).str.upper() == query
+    sid_mask = df["SID"].astype(str).str.upper().str.contains(query, na=False)
+    atcf_mask = pd.Series(False, index=df.index)
+    if "USA_ATCF_ID" in df.columns:
+        atcf_mask = df["USA_ATCF_ID"].astype(str).str.upper().str.contains(query, na=False)
+    result = df[name_mask | sid_mask | atcf_mask]
+    if year is not None and len(result) > 0 and "SEASON" in result.columns:
+        result = result[result["SEASON"] == int(year)]
+    return result
+
+def ibtracs_to_track_list(results):
+    if len(results) == 0:
+        return [], "UNKNOWN"
+    cols = ["ISO_TIME", "LAT", "LON", "USA_WIND", "USA_PRES", "USA_STATUS"]
+    track_cols = [c for c in cols if c in results.columns]
+    df = results[track_cols].dropna(subset=["LAT", "LON"]).sort_values("ISO_TIME")
+    name = results["NAME"].iloc[0] if "NAME" in results.columns else "UNKNOWN"
+    track = []
+    for _, row in df.iterrows():
+        try:
+            dt = pd.Timestamp(row["ISO_TIME"]).to_pydatetime()
+        except:
+            continue
+        wind_val = row.get("USA_WIND", None)
+        pres_val = row.get("USA_PRES", None)
+        status_val = row.get("USA_STATUS", None)
+        wind = float(wind_val) if pd.notna(wind_val) else 0.0
+        pres = float(pres_val) if pd.notna(pres_val) else 0.0
+
+        storm_type = 'TS'
+        if pd.notna(status_val):
+            status_str = str(status_val).strip().upper()
+            if status_str in STORM_TYPE_MARKER:
+                storm_type = status_str
+
+        track.append({
+            'dt': dt,
+            'lat': float(row["LAT"]),
+            'lon': float(row["LON"]),
+            'wind_kt': wind,
+            'pressure': pres,
+            'name': name,
+            'storm_type': storm_type,
+        })
+    return track, name
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DATA SOURCE: EIBTrACS (Invest)
+# ═══════════════════════════════════════════════════════════════════════════════
+def fetch_eibtracs(year, basin, letter, invest_num):
+    url = f"https://www.natyphoon.top/atcf/invest/{year}invest/{basin.upper()}/{letter.upper()}/b{basin.lower()}{invest_num}{year}.dat"
+    print(f"  Fetching EIBTrACS: {url}")
+    data = []
+    try:
+        r = requests.get(url, timeout=15)
+        if r.status_code == 200:
+            for line in r.text.strip().split('\n'):
+                if line.strip() and not line.startswith('#'):
+                    pt = _parse_atcf_line(line)
+                    if pt:
+                        data.append(pt)
+            data.sort(key=lambda x: x['dt'])
+            print(f"  Loaded {len(data)} points")
+    except Exception as e:
+        print(f"  Error: {e}")
+    return data
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LEGEND — Triangle=Non-TC, Circle=TC, Square=Sub-TC
+# ═══════════════════════════════════════════════════════════════════════════════
+def _draw_legend(ax):
+    legend_handles = [
+        mlines.Line2D([], [], marker='^', color='white',
+                      markerfacecolor='none', markeredgecolor='white',
+                      markeredgewidth=1.5, markersize=MARKER_SIZE,
+                      linestyle='None', label='Non-TC'),
+        mlines.Line2D([], [], marker='o', color='white',
+                      markerfacecolor='none', markeredgecolor='white',
+                      markeredgewidth=1.5, markersize=MARKER_SIZE,
+                      linestyle='None', label='TC'),
+        mlines.Line2D([], [], marker='s', color='white',
+                      markerfacecolor='none', markeredgecolor='white',
+                      markeredgewidth=1.5, markersize=MARKER_SIZE,
+                      linestyle='None', label='Sub-TC'),
+    ]
+
+    leg = ax.legend(
+        handles=legend_handles,
+        loc='upper left',
+        frameon=True,
+        framealpha=0.6,
+        facecolor='black',
+        edgecolor='white',
+        labelcolor='white',
+        fontsize=TEXT_SIZE-2,
+        handletextpad=0.5,
+        borderpad=0.6,
+        labelspacing=0.4,
+    )
+    leg.set_zorder(10)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PLOTTING ENGINE
+# ═══════════════════════════════════════════════════════════════════════════════
+def plot_track(track_data, storm_name, output_filename="storm_track.png"):
+    if not track_data:
+        print("No track data to plot.")
+        return None
+
+    # Fix IDL crossing
+    track_data = fix_idl(track_data)
+
+    df = pd.DataFrame(track_data)
+    df = df.sort_values('dt').reset_index(drop=True)
+
+    if 'storm_type' not in df.columns:
+        df['storm_type'] = 'TS'
+    if 'lon_plot' not in df.columns:
+        df['lon_plot'] = df['lon'].apply(lambda x: x + 360 if x < 0 else x)
+
+    # Stats
+    ace_val     = calculate_ace(df)
+    max_wind    = df['wind_kt'].max()
+    start_dt    = df['dt'].min()
+    end_dt      = df['dt'].max()
+
+    valid_pres  = df['pressure'][(df['pressure'] > 0) & df['pressure'].notna()]
+    pres_str    = f"{valid_pres.min():.0f} hPa" if len(valid_pres) > 0 else "N/A"
+
+    # Extent
+    lat_min, lat_max = df['lat'].min(), df['lat'].max()
+    lon_min, lon_max = df['lon_plot'].min(), df['lon_plot'].max()
+    lat_span = lat_max - lat_min
+    lon_span = lon_max - lon_min
+    pad = max(5.0, min(lat_span, lon_span) * 0.3)
+
+    # Dynamic grid intervals — based on padded span so labels match visible area
+    padded_lon_span = lon_span + pad * 2
+    padded_lat_span = lat_span + pad * 2
+    lon_interval = get_grid_interval(padded_lon_span)
+    lat_interval = get_grid_interval(padded_lat_span)
+
+    # Center longitude
+    center_lon = (lon_min + lon_max) / 2.0
+    while center_lon > 180:
+        center_lon -= 360
+    while center_lon < -180:
+        center_lon += 360
+
+    extent = [
+        lon_min - pad, lon_max + pad,
+        max(lat_min - pad, -90), min(lat_max + pad, 90)
+    ]
+
+    # Figure
+    render_dpi = OUTPUT_DPI
+    fig = plt.figure(figsize=(14, 10), dpi=render_dpi, facecolor=BG_COLOR)
+    ax = plt.subplot(1, 1, 1, projection=ccrs.PlateCarree(central_longitude=center_lon))
+    plt.subplots_adjust(left=0.08, right=0.88, top=0.88, bottom=0.12)
+
+    ax.set_extent(extent, crs=ccrs.PlateCarree())
+    ax.set_facecolor(OCEAN_COLOR)
+
+    # Map features — all 50m resolution, 0.8 thickness white
+    ax.add_feature(cf.LAND.with_scale('50m'),      facecolor=LAND_COLOR,  zorder=0)
+    ax.add_feature(cf.OCEAN.with_scale('50m'),     facecolor=OCEAN_COLOR, zorder=0)
+    ax.add_feature(cf.COASTLINE.with_scale('10m'), edgecolor='white',     linewidth=FEATURE_LINEWIDTH, zorder=2)
+    ax.add_feature(cf.BORDERS.with_scale('50m'),   edgecolor='white',     linewidth=FEATURE_LINEWIDTH, zorder=2)
+    ax.add_feature(cf.STATES.with_scale('50m'),    edgecolor='white',     linewidth=FEATURE_LINEWIDTH, zorder=2)
+
+    # Map frame
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_edgecolor('white')
+        spine.set_linewidth(1.5)
+
+    # Gridlines — dynamic intervals
+    gl = ax.gridlines(
+        draw_labels=True,
+        linewidth=0.8, color=GRID_COLOR, alpha=0.5, linestyle='--',
+        xlocs=ticker.MultipleLocator(lon_interval),
+        ylocs=ticker.MultipleLocator(lat_interval)
+    )
+    gl.top_labels    = False
+    gl.right_labels  = False
+    gl.left_labels   = True
+    gl.bottom_labels = True
+    gl.xformatter = LongitudeFormatter(zero_direction_label=True)
+    gl.yformatter = LatitudeFormatter()
+    gl.xlabel_style = {'size': GRID_LABEL_SIZE, 'color': TEXT_COLOR}
+    gl.ylabel_style = {'size': GRID_LABEL_SIZE, 'color': TEXT_COLOR}
+
+    # ── TRACK LINES ──────────────────────────────────────────────────────────
+    for i in range(len(df) - 1):
+        r1, r2 = df.iloc[i], df.iloc[i+1]
+        ax.plot(
+            [r1['lon_plot'], r2['lon_plot']], [r1['lat'], r2['lat']],
+            color='white', linewidth=TRACK_LINEWIDTH,
+            transform=ccrs.PlateCarree(), zorder=3,
+            solid_capstyle='round'
+        )
+
+    # ── TRACK POINTS ─────────────────────────────────────────────────────────
+    for _, row in df.iterrows():
+        cat    = get_sshws_category(row['wind_kt'])
+        color  = SSHWS_COLORS[cat]
+        marker = get_marker(row.get('storm_type', 'TS'))
+
+        ax.plot(
+            row['lon_plot'], row['lat'], marker,
+            color=color,
+            markersize=MARKER_SIZE,
+            markeredgewidth=0,
+            transform=ccrs.PlateCarree(), zorder=4
+        )
+
+    # ── START / END POINT LABELS ─────────────────────────────────────────────
+    for pt, label_dt in [(df.iloc[0], start_dt), (df.iloc[-1], end_dt)]:
+        ax.annotate(
+            label_dt.strftime('%Y-%m-%d %H:%MZ'),
+            xy=(pt['lon_plot'], pt['lat']),
+            xytext=(5, -12),
+            textcoords='offset points',
+            color='white', fontsize=TEXT_SIZE-3, fontweight='normal',
+            ha='left', va='top',
+            transform=ccrs.PlateCarree(), zorder=6
+        )
+
+    # ── TITLES ───────────────────────────────────────────────────────────────
+    date_range_str = (
+        f"Date: {start_dt.strftime('%Y-%m-%d %H:%MZ')} – "
+        f"{end_dt.strftime('%Y-%m-%d %H:%MZ')}"
+    )
+    ax.set_title(
+        f"{storm_name.upper()}\n{date_range_str}",
+        loc='left',
+        fontsize=TEXT_SIZE,
+        fontweight='normal',
+        color=TEXT_COLOR,
+        pad=15
+    )
+
+    stats_line  = f"Peak: {max_wind:.0f} kt  |  {pres_str}  |  ACE: {ace_val:.4f}"
+    credit_line = "Althea Kate (@thea_girl)"
+    ax.set_title(
+        f"{stats_line}\n{credit_line}",
+        loc='right',
+        fontsize=TEXT_SIZE,
+        fontweight='normal',
+        color=TEXT_COLOR,
+        pad=15
+    )
+
+    # ── LEGEND ───────────────────────────────────────────────────────────────
+    _draw_legend(ax)
+
+    # ── COLORBAR — right side ────────────────────────────────────────────────
+    cmap = mcolors.ListedColormap(CBAR_COLORS)
+    norm = mcolors.BoundaryNorm(CBAR_BOUNDS, cmap.N)
+
+    img = ax.pcolormesh(
+        np.array([[0]]), np.array([[0]]), np.array([[0]]),
+        cmap=cmap, norm=norm, transform=ccrs.PlateCarree()
+    )
+    img.set_visible(False)
+
+    cbar = fig.colorbar(
+        img,
+        ax=ax,
+        orientation='vertical',
+        pad=0.03,
+        shrink=0.65,
+        aspect=25,
+        fraction=0.06,
+        ticks=CBAR_BOUNDS[:-1]
+    )
+    cbar.ax.set_yticklabels(CBAR_LABELS, color='white', fontsize=TEXT_SIZE-1)
+    cbar.set_label('SSHWS', color='white', fontsize=TEXT_SIZE-1, labelpad=6)
+    cbar.outline.set_edgecolor('white')
+    cbar.ax.tick_params(colors='white', length=0)
+    cbar.ax.set_facecolor(BG_COLOR)
+
+    # Save
+    plt.savefig(output_filename, dpi=render_dpi, facecolor=BG_COLOR,
+                bbox_inches='tight', pad_inches=0.08)
+
+    print(f"  → Saved: {output_filename}")
+    plt.close(fig)
+    return output_filename
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# UI
+# ═══════════════════════════════════════════════════════════════════════════════
+def create_ui():
+    source_dropdown = widgets.Dropdown(
+        options=['IBTrACS', 'EIBTrACS (Invest)', 'JTWC Best Track'],
+        value='IBTrACS',
+        description='Source:',
+        style={'description_width': 'initial'},
+        layout=widgets.Layout(width='300px')
+    )
+
+    ibtracs_storm = widgets.Text(
+        value='HAIYAN',
+        placeholder='e.g. HAIYAN, WP312013',
+        description='Storm ID:',
+        style={'description_width': 'initial'},
+        layout=widgets.Layout(width='400px')
+    )
+    ibtracs_year = widgets.Text(
+        value='',
+        placeholder='Optional (e.g. 2013)',
+        description='Year:',
+        style={'description_width': 'initial'},
+        layout=widgets.Layout(width='200px')
+    )
+    ibtracs_box = widgets.HBox([ibtracs_storm, ibtracs_year])
+
+    jtwc_year = widgets.Text(value='2013', placeholder='Year', description='Year:',
+                              style={'description_width': 'initial'}, layout=widgets.Layout(width='120px'))
+    jtwc_storm_num = widgets.Text(value='23', placeholder='#', description='Storm #:',
+                                   style={'description_width': 'initial'}, layout=widgets.Layout(width='120px'))
+    jtwc_basin = widgets.Dropdown(options=['WP', 'EP', 'AL', 'CP', 'SH', 'IO'],
+                                  value='WP', description='Basin:',
+                                  style={'description_width': 'initial'}, layout=widgets.Layout(width='150px'))
+    jtwc_box = widgets.HBox([jtwc_year, jtwc_storm_num, jtwc_basin])
+    jtwc_box.layout.display = 'none'
+
+    ei_year   = widgets.Text(value='2025', placeholder='Year',   description='Year:',     style={'description_width': 'initial'}, layout=widgets.Layout(width='120px'))
+    ei_basin  = widgets.Text(value='WP',   placeholder='Basin',  description='Basin:',    style={'description_width': 'initial'}, layout=widgets.Layout(width='120px'))
+    ei_letter = widgets.Text(value='A',    placeholder='Letter', description='Letter:',   style={'description_width': 'initial'}, layout=widgets.Layout(width='120px'))
+    ei_invest = widgets.Text(value='90',   placeholder='#',      description='Invest #:', style={'description_width': 'initial'}, layout=widgets.Layout(width='120px'))
+    eibtracs_box = widgets.HBox([ei_year, ei_basin, ei_letter, ei_invest])
+    eibtracs_box.layout.display = 'none'
+
+    def on_source_change(change):
+        src = change['new']
+        ibtracs_box.layout.display  = '' if src == 'IBTrACS' else 'none'
+        jtwc_box.layout.display     = '' if src == 'JTWC Best Track' else 'none'
+        eibtracs_box.layout.display = '' if src == 'EIBTrACS (Invest)' else 'none'
+
+    source_dropdown.observe(on_source_change, names='value')
+
+    generate_btn = widgets.Button(
+        description='GENERATE PLOT', button_style='success',
+        layout=widgets.Layout(width='250px', height='40px')
+    )
+    output = widgets.Output()
+
+    def on_generate(b):
+        with output:
+            clear_output(wait=True)
+            src = source_dropdown.value
+            print(f"Source: {src}")
+            print("-" * 50)
+
+            track_data = []
+            storm_name = "UNKNOWN"
+
+            if src == 'IBTrACS':
+                query = ibtracs_storm.value.strip()
+                if not query:
+                    print("Please enter a storm name or ID.")
+                    return
+                year_val = ibtracs_year.value.strip()
+                year = int(year_val) if year_val else None
+                print(f"Searching IBTrACS for: {query}" + (f" (Year: {year})" if year else ""))
+                results = search_ibtracs(query, year)
+                if len(results) == 0:
+                    print("No storms found.")
+                    return
+                track_data, storm_name = ibtracs_to_track_list(results)
+                if not track_data:
+                    print("No track points extracted.")
+                    return
+
+            elif src == 'EIBTrACS (Invest)':
+                try:
+                    year       = int(ei_year.value)
+                    basin      = ei_basin.value
+                    letter     = ei_letter.value
+                    invest_num = ei_invest.value
+                except:
+                    print("Invalid input.")
+                    return
+                track_data = fetch_eibtracs(year, basin, letter, invest_num)
+                if track_data:
+                    storm_name = track_data[0].get('name', f'INVEST {invest_num}{letter}')
+                else:
+                    print("No data found.")
+                    return
+
+            elif src == 'JTWC Best Track':
+                try:
+                    year      = int(jtwc_year.value)
+                    storm_num = jtwc_storm_num.value
+                    basin     = jtwc_basin.value
+                except:
+                    print("Invalid input.")
+                    return
+                track_data = fetch_jtwc_best_track(year, storm_num, basin)
+                if track_data:
+                    storm_name = track_data[0].get('name', f'{basin}{storm_num}')
+                else:
+                    print("No data found.")
+                    return
+
+            if not track_data:
+                print("No track data to plot.")
+                return
+
+            print(f"  Storm: {storm_name} | Points: {len(track_data)}")
+            fname = f"{storm_name.replace(' ','_')}_track.png"
+            out_path = plot_track(track_data, storm_name, fname)
+            if out_path:
+                display(IPImage(filename=out_path))
+
+    generate_btn.on_click(on_generate)
+
+    return widgets.VBox([
+        widgets.HTML("<h2 style='color:#ccc'>🌀 Tropical Cyclone Track Plotter</h2>"),
+        widgets.HTML("<hr>"),
+        source_dropdown,
+        widgets.HTML("<br>"),
+        ibtracs_box,
+        jtwc_box,
+        eibtracs_box,
+        widgets.HTML("<br>"),
+        generate_btn,
+        output
+    ])
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LAUNCH
+# ═══════════════════════════════════════════════════════════════════════════════
+print("\n" + "=" * 60)
+print("  TROPICAL CYCLONE TRACK PLOTTER")
+print("  IBTrACS | EIBTrACS (Invest) | JTWC Best Track")
+print("  Credit: Althea Kate (@thea_girl)")
+print("=" * 60 + "\n")
+display(create_ui())
